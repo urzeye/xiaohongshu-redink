@@ -8,7 +8,7 @@
       (function () {
         try {
           var key = "redink-theme";
-          var saved = localStorage.getItem(key) || localStorage.getItem("motiflab-theme");
+          var saved = localStorage.getItem(key);
           var prefersDark =
             typeof window.matchMedia === "function" &&
             window.matchMedia("(prefers-color-scheme: dark)").matches;

@@ -256,7 +256,7 @@ class MCPManager:
                 "protocolVersion": "2025-06-18",
                 "capabilities": {},
                 "clientInfo": {
-                    "name": "motiflab-backend",
+                    "name": "redink-backend",
                     "version": "0.1.0",
                 },
             },

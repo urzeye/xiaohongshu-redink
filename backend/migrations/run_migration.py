@@ -67,7 +67,7 @@ def run_migration():
     docs = _load_sql_documents(migration_files)
 
     print("=" * 50)
-    print("渲染AI Supabase 数据库迁移")
+    print("RedInk Supabase 数据库迁移")
     print("=" * 50)
     print(f"发现 {len(migration_files)} 个 SQL 文件：")
     for file in migration_files:

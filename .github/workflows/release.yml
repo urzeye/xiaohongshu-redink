@@ -54,10 +54,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: ${{ steps.get_version.outputs.VERSION }}
-          name: MotifLab ${{ steps.get_version.outputs.VERSION }}
+          name: RedInk ${{ steps.get_version.outputs.VERSION }}
           generate_release_notes: false
           body: |
-            ## 🚀 MotifLab Release ${{ steps.get_version.outputs.VERSION }}
+            ## 🚀 RedInk Release ${{ steps.get_version.outputs.VERSION }}
 
             ### ✨ What's New | 本次更新内容
 

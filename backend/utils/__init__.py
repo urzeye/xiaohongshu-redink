@@ -1,5 +1,5 @@
 """
-MotifLab 工具模块
+RedInk 工具模块
 """
 
 from .mcp_manager import MCPManager, mcp_manager

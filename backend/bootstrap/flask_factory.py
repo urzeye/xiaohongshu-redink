@@ -55,9 +55,9 @@ def _configure_cors(app: Flask, settings: AppSettings, logger: logging.Logger) -
 def _configure_auth_guard(app: Flask, logger: logging.Logger) -> None:
     """注册 API 鉴权前置拦截。"""
     if is_auth_enabled():
-        logger.warning("[AUTH] 已启用 API 访问令牌认证（MOTIFLAB_AUTH_TOKEN）")
+        logger.warning("[AUTH] 已启用 API 访问令牌认证（REDINK_AUTH_TOKEN）")
     else:
-        logger.info("[AUTH] 未启用 API 访问令牌认证（MOTIFLAB_AUTH_TOKEN 未设置）")
+        logger.info("[AUTH] 未启用 API 访问令牌认证（REDINK_AUTH_TOKEN 未设置）")
 
     @app.before_request
     def _api_auth_guard():

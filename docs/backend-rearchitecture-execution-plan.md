@@ -1,4 +1,4 @@
-# MotifLab Backend Rearchitecture Execution Plan
+# RedInk Backend Rearchitecture Execution Plan
 
 ## Scope
 

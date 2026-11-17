@@ -44,7 +44,7 @@ MAX_SEARCH_TIMEOUT_SECONDS = 60
 def _get_project_root() -> Path:
     """获取项目根目录（处理包安装和直接运行两种情况）"""
     # 优先使用环境变量
-    custom_root = os.getenv("MOTIFLAB_ROOT") or os.getenv("RENDERINK_ROOT")
+    custom_root = os.getenv("REDINK_ROOT")
     if custom_root:
         return Path(custom_root)
 

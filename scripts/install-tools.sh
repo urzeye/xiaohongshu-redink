@@ -270,7 +270,7 @@ EOF
 }
 
 main() {
-  echo -e "${BLUE}MotifLab tool installer${NC}"
+  echo -e "${BLUE}RedInk tool installer${NC}"
   mkdir -p "$TOOL_DIR"
 
   detect_platform

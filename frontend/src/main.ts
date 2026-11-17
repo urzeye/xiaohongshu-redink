@@ -57,7 +57,7 @@ function requestAccessToken(): Promise<string | null> {
           h(NInput, {
             type: "password",
             value: tokenValue.value,
-            placeholder: "输入 MOTIFLAB_AUTH_TOKEN",
+            placeholder: "输入 REDINK_AUTH_TOKEN",
             showPasswordOn: "mousedown",
             autofocus: true,
             onUpdateValue: (value: string) => {
