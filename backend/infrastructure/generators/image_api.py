@@ -6,6 +6,7 @@ import requests
 from typing import Dict, Any, Optional, List, Union
 from .base import ImageGeneratorBase
 from backend.utils.image_compressor import compress_image
+from backend.utils.url_helper import resolve_api_url
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class ImageApiGenerator(ImageGeneratorBase):
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
         logger.debug("初始化 ImageApiGenerator...")
-        self.base_url = config.get('base_url', 'https://api.example.com').rstrip('/').rstrip('/v1')
+        self.base_url = (config.get('base_url') or 'https://api.example.com').strip().rstrip('/')
         self.model = config.get('model', 'default-model')
         self.text_model = config.get('text_model')
         self.edit_model = config.get('edit_model')
@@ -228,7 +229,7 @@ class ImageApiGenerator(ImageGeneratorBase):
 4. 如果参考图中有人物或产品，可以适当融入"""
             payload["prompt"] = enhanced_prompt
 
-        api_url = f"{self.base_url}{self.endpoint_type}"
+        api_url = resolve_api_url(self.base_url, self.endpoint_type, default_endpoint='/v1/images/generations')
         logger.debug(f"  发送请求到: {api_url}")
         def _post_once() -> requests.Response:
             return requests.post(api_url, headers=headers, json=payload, timeout=IMAGE_API_TIMEOUT)
@@ -375,7 +376,7 @@ class ImageApiGenerator(ImageGeneratorBase):
             "temperature": 1.0
         }
 
-        api_url = f"{self.base_url}{self.endpoint_type}"
+        api_url = resolve_api_url(self.base_url, self.endpoint_type, default_endpoint='/v1/chat/completions')
         logger.info(f"Chat API 生成图片: {api_url}, model={model}")
 
         response = requests.post(api_url, headers=headers, json=payload, timeout=IMAGE_API_TIMEOUT)

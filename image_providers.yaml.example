@@ -80,3 +80,15 @@ providers:
   #   use_size_tag: false
   #   high_concurrency: false
   #   short_prompt: true
+
+  # ark_doubao:
+  #   type: image_api
+  #   api_key: "your-ark-api-key"
+  #   base_url: https://ark.cn-beijing.volces.com/api/v3
+  #   model: ep-xxxxxx-xxxx  # 火山方舟推理接入点 Endpoint ID
+  #   endpoint_type: /images/generations
+  #   default_aspect_ratio: "3:4"
+  #   image_size: 2400x1600  # 火山引擎要求总像素 >= 3686400 或指定 2K/4K
+  #   use_size_tag: false
+  #   high_concurrency: false
+  #   short_prompt: false

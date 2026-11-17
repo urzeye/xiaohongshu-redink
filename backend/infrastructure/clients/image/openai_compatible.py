@@ -4,6 +4,7 @@ import base64
 from typing import Dict, Any
 import requests
 from .base import BaseImageClient
+from backend.utils.url_helper import resolve_api_url
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,8 @@ class OpenAICompatibleGenerator(BaseImageClient):
                 "解决方案：在系统设置页面编辑该服务商，填写 Base URL"
             )
 
-        # 规范化 base_url：去除末尾 /v1
-        self.base_url = self.base_url.rstrip('/').rstrip('/v1')
+        # 规范化 base_url
+        self.base_url = self.base_url.rstrip('/')
 
         # 默认模型
         self.default_model = config.get('model', 'dall-e-3')
@@ -91,9 +92,7 @@ class OpenAICompatibleGenerator(BaseImageClient):
         quality: str
     ) -> bytes:
         """通过 images API 端点生成"""
-        # 确保端点以 / 开头
-        endpoint = self.endpoint_type if self.endpoint_type.startswith('/') else '/' + self.endpoint_type
-        url = f"{self.base_url}{endpoint}"
+        url = resolve_api_url(self.base_url, self.endpoint_type, default_endpoint='/v1/images/generations')
         logger.debug(f"  发送请求到: {url}")
 
         headers = {
@@ -191,9 +190,7 @@ class OpenAICompatibleGenerator(BaseImageClient):
         2. Base64 data URL: data:image/xxx;base64,xxx
         3. 纯图片 URL
         """
-        # 确保端点以 / 开头
-        endpoint = self.endpoint_type if self.endpoint_type.startswith('/') else '/' + self.endpoint_type
-        url = f"{self.base_url}{endpoint}"
+        url = resolve_api_url(self.base_url, self.endpoint_type, default_endpoint='/v1/chat/completions')
         logger.info(f"Chat API 生成图片: {url}, model={model}")
 
         headers = {

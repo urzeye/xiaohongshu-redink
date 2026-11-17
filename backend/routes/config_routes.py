@@ -555,14 +555,11 @@ def _test_google_gemini(config: dict, test_prompt: str) -> dict:
 def _test_openai_compatible(config: dict, test_prompt: str) -> dict:
     """测试 OpenAI 兼容接口"""
     import requests
+    from backend.utils.url_helper import resolve_api_url
 
-    if config.get('base_url'):
-        base_url = config['base_url'].rstrip('/')
-        if base_url.endswith('/v1'):
-            base_url = base_url[:-3]
-    else:
-        base_url = 'https://api.openai.com'
-    url = f"{base_url}/v1/chat/completions"
+    base_url = config.get('base_url') or 'https://api.openai.com'
+    endpoint = config.get('endpoint_type') or '/v1/chat/completions'
+    url = resolve_api_url(base_url, endpoint, default_endpoint='/v1/chat/completions')
 
     payload = {
         "model": config.get('model') or 'gpt-3.5-turbo',
@@ -641,20 +638,36 @@ def _test_dashscope(config: dict) -> dict:
 def _test_image_api(config: dict) -> dict:
     """测试图片 API 连接"""
     import requests
+    from backend.utils.url_helper import build_models_url
 
-    if config.get('base_url'):
-        base_url = config['base_url'].rstrip('/')
-        if base_url.endswith('/v1'):
-            base_url = base_url[:-3]
-    else:
-        base_url = 'https://api.openai.com'
-    url = f"{base_url}/v1/models"
+    base_url = config.get('base_url') or 'https://api.openai.com'
+    url = build_models_url(base_url)
 
     response = requests.get(
         url,
         headers={'Authorization': f"Bearer {config['api_key']}"},
         timeout=30
     )
+
+    # 若首次请求返回 404，在 /models 与 /v1/models 之间做一次容错互换尝试
+    if response.status_code == 404:
+        alt_url = None
+        if "/v1/models" in url:
+            alt_url = url.replace("/v1/models", "/models")
+        elif url.endswith("/models"):
+            alt_url = url[:-7] + "/v1/models"
+
+        if alt_url and alt_url != url:
+            try:
+                alt_resp = requests.get(
+                    alt_url,
+                    headers={'Authorization': f"Bearer {config['api_key']}"},
+                    timeout=15
+                )
+                if alt_resp.status_code == 200:
+                    response = alt_resp
+            except Exception:
+                pass
 
     if response.status_code == 200:
         return {

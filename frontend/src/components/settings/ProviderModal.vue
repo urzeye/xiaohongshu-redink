@@ -328,14 +328,24 @@ const previewUrl = computed(() => {
     return props.formData.base_url
   }
 
-  const baseUrl = props.formData.base_url.replace(/\/$/, '').replace(/\/v1$/, '')
-  const endpoint = props.formData.endpoint_type || '/v1/chat/completions'
+  const baseUrl = props.formData.base_url.replace(/\/+$/, '')
 
   if (props.formData.type === 'google_gemini') {
-    return `${baseUrl}/v1beta/models/${props.formData.model || '{model}'}:generateContent`
+    const cleanBase = baseUrl.replace(/\/v1beta$/, '').replace(/\/v1$/, '')
+    return `${cleanBase}/v1beta/models/${props.formData.model || '{model}'}:generateContent`
   }
 
-  return `${baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`
+  let endpoint = (props.formData.endpoint_type || '/v1/chat/completions').trim()
+  if (endpoint === 'chat') endpoint = '/v1/chat/completions'
+  if (!endpoint.startsWith('/')) endpoint = '/' + endpoint
+
+  if (/\/(v\d+|api\/v\d+)$/i.test(baseUrl) && /^\/v\d+\//i.test(endpoint)) {
+    endpoint = endpoint.replace(/^\/v\d+/, '')
+  } else if (!/\/(v\d+|api\/v\d+)$/i.test(baseUrl) && !/^\/v\d+\//i.test(endpoint)) {
+    endpoint = `/v1${endpoint}`
+  }
+
+  return `${baseUrl}${endpoint}`
 })
 </script>
 

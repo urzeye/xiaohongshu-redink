@@ -293,18 +293,29 @@ const modelPlaceholder = computed(() => {
 const previewUrl = computed(() => {
   if (!props.formData.base_url) return ''
 
-  const baseUrl = props.formData.base_url.replace(/\/$/, '').replace(/\/v1$/, '')
+  const baseUrl = props.formData.base_url.replace(/\/+$/, '')
 
   if (props.formData.type === 'google_genai') {
-    return `${baseUrl}/v1beta/models/${props.formData.model || '{model}'}:generateImages`
+    const cleanBase = baseUrl.replace(/\/v1beta$/, '').replace(/\/v1$/, '')
+    return `${cleanBase}/v1beta/models/${props.formData.model || '{model}'}:generateImages`
   }
 
   if (props.formData.type === 'dashscope') {
     return `${baseUrl}`
   }
 
-  const endpoint = props.formData.endpoint_type || '/v1/images/generations'
-  return `${baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`
+  let endpoint = (props.formData.endpoint_type || '/v1/images/generations').trim()
+  if (endpoint === 'images') endpoint = '/v1/images/generations'
+  else if (endpoint === 'chat') endpoint = '/v1/chat/completions'
+  if (!endpoint.startsWith('/')) endpoint = '/' + endpoint
+
+  if (/\/(v\d+|api\/v\d+)$/i.test(baseUrl) && /^\/v\d+\//i.test(endpoint)) {
+    endpoint = endpoint.replace(/^\/v\d+/, '')
+  } else if (!/\/(v\d+|api\/v\d+)$/i.test(baseUrl) && !/^\/v\d+\//i.test(endpoint)) {
+    endpoint = `/v1${endpoint}`
+  }
+
+  return `${baseUrl}${endpoint}`
 })
 </script>
 
