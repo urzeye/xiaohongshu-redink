@@ -351,6 +351,38 @@
         </button>
       </div>
     </div>
+
+    <!-- 小红书扫码登录弹窗 -->
+    <n-modal v-model:show="showQrModal">
+      <n-card
+        style="width: 360px; text-align: center"
+        title="小红书扫码登录"
+        :bordered="false"
+        size="huge"
+        role="dialog"
+        aria-modal="true"
+      >
+        <p style="color: var(--text-sub); margin-bottom: 16px; font-size: 13px">
+          {{ qrMessage || "请使用手机小红书 App 扫描下方二维码登录" }}
+        </p>
+        <div style="display: flex; justify-content: center; margin-bottom: 16px">
+          <img
+            v-if="qrCodeUrl"
+            :src="qrCodeUrl"
+            alt="小红书登录二维码"
+            style="width: 220px; height: 220px; border-radius: 8px; border: 1px solid var(--border-color, #eee)"
+          />
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: center">
+          <button class="btn btn-primary" @click="handleQrScanDone">
+            我已完成扫码
+          </button>
+          <button class="btn" @click="showQrModal = false">
+            关闭
+          </button>
+        </div>
+      </n-card>
+    </n-modal>
   </div>
 </template>
 
@@ -368,7 +400,7 @@ import {
   type LoginStatus,
   type PublishProgressEvent,
 } from "../api";
-import { useMessage, NImage, NImageGroup, NSelect, NInput } from "naive-ui";
+import { useMessage, NImage, NImageGroup, NSelect, NInput, NModal, NCard } from "naive-ui";
 import CreationStepper from "../components/home/CreationStepper.vue";
 
 const router = useRouter();
@@ -379,6 +411,9 @@ const message = useMessage();
 const vibeSurfStatus = ref<VibeSurfStatus | null>(null);
 const loginStatus = ref<LoginStatus | null>(null);
 const openingLogin = ref(false);
+const showQrModal = ref(false);
+const qrCodeUrl = ref("");
+const qrMessage = ref("");
 const startingVibeSurf = ref(false);
 const installingMcp = ref(false);
 const isPublishing = ref(false);
@@ -554,12 +589,23 @@ const openLogin = async () => {
     const result = await openXiaohongshuLogin();
     if (!result.success) {
       message.error("打开登录页面失败: " + result.error);
+    } else if (result.qrcode) {
+      qrCodeUrl.value = result.qrcode;
+      qrMessage.value = result.message || "请使用小红书 App 扫码登录";
+      showQrModal.value = true;
+    } else {
+      message.info(result.message || "请在弹出的浏览器窗口中完成登录");
     }
   } catch (e: any) {
     message.error("打开登录页面失败: " + e.message);
   } finally {
     openingLogin.value = false;
   }
+};
+
+const handleQrScanDone = async () => {
+  showQrModal.value = false;
+  await checkLogin();
 };
 
 const copyPostUrl = async () => {

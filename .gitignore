@@ -87,6 +87,7 @@ git-changelog.txt
 tools/xiaohongshu-mcp/xiaohongshu-mcp
 tools/xiaohongshu-mcp/xiaohongshu-login
 tools/xiaohongshu-mcp/*.exe
+tools/xiaohongshu-mcp/*.bak
 tools/xiaohongshu-mcp/config.json
 
 # Data directory (contains login sessions)

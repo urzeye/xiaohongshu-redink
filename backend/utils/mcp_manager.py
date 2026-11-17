@@ -72,7 +72,7 @@ class MCPManager:
         except Exception:
             return False
 
-    def start(self, timeout: int = 30) -> bool:
+    def start(self, timeout: int = 60) -> bool:
         if self.is_running():
             logger.info("MCP service already running")
             return True
@@ -265,20 +265,35 @@ class MCPManager:
         resp.raise_for_status()
 
         session_id = resp.headers.get("Mcp-Session-Id") or resp.headers.get("mcp-session-id")
-        if not session_id:
-            raise RuntimeError("MCP initialize succeeded but no Mcp-Session-Id returned")
-        self._session_id = session_id
+        self._session_id = session_id or "stateless"
 
-        # Complete initialize handshake.
-        await client.post(
-            f"{self.mcp_url}{self.mcp_endpoint}",
-            headers={"Mcp-Session-Id": self._session_id},
-            json={
-                "jsonrpc": "2.0",
-                "method": "notifications/initialized",
-                "params": {},
-            },
-        )
+        # Complete initialize handshake only when session_id is returned (stateful mode)
+        if session_id:
+            await client.post(
+                f"{self.mcp_url}{self.mcp_endpoint}",
+                headers={"Mcp-Session-Id": self._session_id},
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "notifications/initialized",
+                    "params": {},
+                },
+            )
+
+    @staticmethod
+    def _extract_image_from_content(content: Any) -> Optional[Dict[str, str]]:
+        if not isinstance(content, list):
+            return None
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "image":
+                data = item.get("data")
+                mime_type = item.get("mimeType", "image/png")
+                if data:
+                    return {
+                        "mime_type": mime_type,
+                        "data": data,
+                        "data_url": f"data:{mime_type};base64,{data}",
+                    }
+        return None
 
     @staticmethod
     def _extract_text_from_content(content: Any) -> str:
@@ -324,16 +339,31 @@ class MCPManager:
                 return structured
 
             text = self._extract_text_from_content(result.get("content"))
+            image_info = self._extract_image_from_content(result.get("content"))
             if text:
                 try:
                     parsed = json.loads(text)
                     if isinstance(parsed, dict):
                         if "success" not in parsed:
                             parsed["success"] = True
+                        if image_info and "image" not in parsed:
+                            parsed["image"] = image_info
+                            parsed["qrcode"] = image_info["data_url"]
                         return parsed
                 except Exception:
                     pass
-                return {"success": True, "message": text}
+                res = {"success": True, "message": text}
+                if image_info:
+                    res["image"] = image_info
+                    res["qrcode"] = image_info["data_url"]
+                return res
+
+            if image_info:
+                return {
+                    "success": True,
+                    "image": image_info,
+                    "qrcode": image_info["data_url"],
+                }
 
             if "success" not in result:
                 result["success"] = True
@@ -346,7 +376,9 @@ class MCPManager:
             await self._mcp_initialize(client)
 
         def _headers():
-            return {"Mcp-Session-Id": self._session_id} if self._session_id else {}
+            if self._session_id and self._session_id != "stateless":
+                return {"Mcp-Session-Id": self._session_id}
+            return {}
 
         payload = {
             "jsonrpc": "2.0",
@@ -421,8 +453,20 @@ class MCPManager:
 
     def get_status(self) -> Dict[str, Any]:
         running = self.is_running()
+        version = None
+        if running:
+            try:
+                resp = httpx.get(f"{self.mcp_url}/health", timeout=1)
+                if resp.status_code == 200:
+                    data = resp.json().get("data", {})
+                    if isinstance(data, dict):
+                        version = data.get("version")
+            except Exception:
+                pass
+
         return {
             "running": running,
+            "version": version,
             "url": self.mcp_url,
             "binary_installed": self.binary_path.exists(),
             "binary_path": str(self.binary_path),

@@ -1137,7 +1137,13 @@ export async function checkXiaohongshuLogin(): Promise<{ success: boolean; statu
   }
 }
 
-export async function openXiaohongshuLogin(): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function openXiaohongshuLogin(): Promise<{
+  success: boolean
+  message?: string
+  error?: string
+  qrcode?: string
+  login_mode?: string
+}> {
   try {
     const response = await axios.post(`${API_BASE_URL}/publish/login`, {}, { timeout: 30000 })
     return response.data

@@ -176,9 +176,9 @@ download_and_install() {
   local candidate downloaded=false
 
   if [ "$IS_WINDOWS" = true ]; then
-    candidates=("${ASSET_PATTERN}.zip" "${ASSET_PATTERN}.tar.gz")
+    candidates=("${ASSET_PATTERN}.exe" "${ASSET_PATTERN}.zip" "${ASSET_PATTERN}.tar.gz")
   else
-    candidates=("${ASSET_PATTERN}.tar.gz" "${ASSET_PATTERN}.zip")
+    candidates=("${ASSET_PATTERN}" "${ASSET_PATTERN}.tar.gz" "${ASSET_PATTERN}.zip")
   fi
 
   if [ -f "$TOOL_DIR/xiaohongshu-mcp" ] || [ -f "$TOOL_DIR/xiaohongshu-mcp.exe" ]; then
@@ -220,9 +220,51 @@ download_and_install() {
     exit 1
   fi
 
-  log_info "Extracting package..."
-  extract_archive "$TEMP_FILE"
-  install_binaries
+if [[ "$ASSET_NAME" == *.zip ]] || [[ "$ASSET_NAME" == *.tar.gz ]]; then
+    log_info "Extracting package..."
+    extract_archive "$TEMP_FILE"
+    install_binaries
+  else
+    log_info "Installing direct binary..."
+    if [ "$IS_WINDOWS" = true ]; then
+      replace_file "$TEMP_FILE" "$TOOL_DIR/xiaohongshu-mcp.exe"
+      chmod +x "$TOOL_DIR/xiaohongshu-mcp.exe" >/dev/null 2>&1 || true
+    else
+      replace_file "$TEMP_FILE" "$TOOL_DIR/xiaohongshu-mcp"
+      chmod +x "$TOOL_DIR/xiaohongshu-mcp"
+    fi
+  fi
+
+  local login_candidate=""
+  local login_target=""
+  if [ "$IS_WINDOWS" = true ]; then
+    login_candidate="xiaohongshu-login-windows-amd64.exe"
+    login_target="$TOOL_DIR/xiaohongshu-login.exe"
+  elif [ "$PLATFORM" = "macOS (Apple Silicon)" ]; then
+    login_candidate="xiaohongshu-login-darwin-arm64"
+    login_target="$TOOL_DIR/xiaohongshu-login"
+  elif [ "$PLATFORM" = "macOS (Intel)" ]; then
+    login_candidate="xiaohongshu-login-darwin-amd64"
+    login_target="$TOOL_DIR/xiaohongshu-login"
+  elif [[ "$PLATFORM" == *"ARM64"* ]]; then
+    login_candidate="xiaohongshu-login-linux-arm64"
+    login_target="$TOOL_DIR/xiaohongshu-login"
+  else
+    login_candidate="xiaohongshu-login-linux-amd64"
+    login_target="$TOOL_DIR/xiaohongshu-login"
+  fi
+
+  if [ -n "$login_candidate" ]; then
+    local login_url="https://github.com/${REPO}/releases/latest/download/${login_candidate}"
+    local login_temp="${TEMP_DIR%/}/${login_candidate}"
+    log_info "Checking companion tool: $login_candidate"
+    if curl -L --fail --retry 3 --retry-delay 2 --retry-all-errors "$login_url" -o "$login_temp" >/dev/null 2>&1; then
+      replace_file "$login_temp" "$login_target"
+      chmod +x "$login_target" >/dev/null 2>&1 || true
+      log_ok "Installed companion tool: $login_candidate"
+    fi
+  fi
+
   log_ok "Installed binaries to $TOOL_DIR"
 }
 
