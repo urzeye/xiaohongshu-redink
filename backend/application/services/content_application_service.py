@@ -61,3 +61,9 @@ def get_content_application_service() -> ContentApplicationService:
             history_service=get_history_application_service(),
         )
     return _content_application_service
+
+
+def reset_content_application_service() -> None:
+    """重置内容生成应用层服务单例，便于配置重载。"""
+    global _content_application_service
+    _content_application_service = None

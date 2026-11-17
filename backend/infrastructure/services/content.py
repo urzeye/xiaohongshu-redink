@@ -42,8 +42,14 @@ class ContentService:
             return False
         return True
 
+    def reload_config(self) -> None:
+        """重新加载文本配置并更新默认客户端。"""
+        self.text_config = self._load_text_config()
+        self.client, self.active_provider, self.active_provider_config = self._get_client()
+
     def _get_client(self) -> tuple[Any, str, Dict[str, Any]]:
         """根据配置获取可用客户端，优先 active_provider。"""
+        self.text_config = self._load_text_config()
         active_provider = self.text_config.get('active_provider', 'google_gemini')
         providers = self.text_config.get('providers', {})
 
@@ -133,6 +139,8 @@ class ContentService:
         """
         try:
             logger.info(f"开始生成内容: topic={topic[:50]}...")
+            client, active_provider, active_provider_config = self._get_client()
+            self.client, self.active_provider, self.active_provider_config = client, active_provider, active_provider_config
 
             # 构建提示词
             prompt = self.prompt_template.format(
@@ -141,12 +149,12 @@ class ContentService:
             )
 
             # 从配置中获取模型参数
-            model = self.active_provider_config.get('model', 'gemini-2.0-flash-exp')
-            temperature = self.active_provider_config.get('temperature', 1.0)
-            max_output_tokens = self.active_provider_config.get('max_output_tokens', 4000)
+            model = active_provider_config.get('model', 'gemini-2.0-flash-exp')
+            temperature = active_provider_config.get('temperature', 1.0)
+            max_output_tokens = active_provider_config.get('max_output_tokens', 4000)
 
             logger.info(f"调用文本生成 API: model={model}, temperature={temperature}")
-            response_text = self.client.generate_text(
+            response_text = client.generate_text(
                 prompt=prompt,
                 model=model,
                 temperature=temperature,

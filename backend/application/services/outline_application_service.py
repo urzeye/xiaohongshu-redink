@@ -60,3 +60,9 @@ def get_outline_application_service() -> OutlineApplicationService:
     if _outline_application_service is None:
         _outline_application_service = OutlineApplicationService(get_outline_service())
     return _outline_application_service
+
+
+def reset_outline_application_service() -> None:
+    """重置大纲应用层服务单例，便于配置重载。"""
+    global _outline_application_service
+    _outline_application_service = None

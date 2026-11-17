@@ -38,8 +38,13 @@ class OutlineService:
             return False
         return True
 
+    def reload_config(self) -> None:
+        """重新加载文本服务商配置。"""
+        self.text_config = self.config_service.load_text_providers_config()
+
     def _get_client(self, needs_image_support: bool = False):
         """根据配置获取客户端，必要时优先选择支持图片输入的服务商"""
+        self.reload_config()
         active_provider = self.text_config.get('active_provider', 'google_gemini')
         providers = self.text_config.get('providers', {})
 

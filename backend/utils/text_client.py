@@ -2,15 +2,18 @@
 import time
 import random
 import base64
+import logging
 import requests
 from functools import wraps
 from typing import List, Optional, Union
 from .image_compressor import compress_image
 from .url_helper import resolve_api_url
 
+logger = logging.getLogger(__name__)
 
-def retry_on_429(max_retries=3, base_delay=2):
-    """429 错误自动重试装饰器"""
+
+def retry_on_transient_error(max_retries=3, base_delay=2):
+    """限流（429）与服务端临时错误（500/502/503/504/网络异常）自动重试装饰器"""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -19,23 +22,42 @@ def retry_on_429(max_retries=3, base_delay=2):
                     return func(*args, **kwargs)
                 except Exception as e:
                     error_str = str(e)
-                    if "429" in error_str or "rate" in error_str.lower():
-                        if attempt < max_retries - 1:
-                            wait_time = (base_delay ** attempt) + random.uniform(0, 1)
-                            print(f"[重试] 遇到限流，{wait_time:.1f}秒后重试 (尝试 {attempt + 2}/{max_retries})")
-                            time.sleep(wait_time)
-                            continue
+                    is_transient = (
+                        "429" in error_str
+                        or "rate" in error_str.lower()
+                        or "500" in error_str
+                        or "502" in error_str
+                        or "503" in error_str
+                        or "504" in error_str
+                        or "overloaded" in error_str.lower()
+                        or "temporarily unavailable" in error_str.lower()
+                        or "connection" in error_str.lower()
+                        or "timeout" in error_str.lower()
+                    )
+                    if is_transient and attempt < max_retries - 1:
+                        wait_time = (base_delay ** attempt) + random.uniform(0.5, 1.5)
+                        summary = error_str.strip().splitlines()[0] if error_str.strip() else "未知异常"
+                        logger.warning(
+                            f"[重试] 文本生成遇到临时故障: {summary}，"
+                            f"{wait_time:.1f}s 后自动重试 (尝试 {attempt + 2}/{max_retries})"
+                        )
+                        time.sleep(wait_time)
+                        continue
                     raise
             raise Exception(
                 f"Text API 重试 {max_retries} 次后仍失败。\n"
                 "可能原因：\n"
-                "1. API持续限流或配额不足\n"
-                "2. 网络连接持续不稳定\n"
-                "3. API服务暂时不可用\n"
-                "建议：稍后再试，或联系API服务提供商"
+                "1. 上游服务持续过载或临时故障 (503/504)\n"
+                "2. API 持续限流或配额不足 (429)\n"
+                "3. 网络连接持续异常\n"
+                "建议：稍后重试或前往服务商控制台查看接入点状态"
             )
         return wrapper
     return decorator
+
+
+# 兼容旧命名
+retry_on_429 = retry_on_transient_error
 
 
 class TextChatClient:
@@ -101,7 +123,7 @@ class TextChatClient:
 
         return content
 
-    @retry_on_429(max_retries=3, base_delay=2)
+    @retry_on_transient_error(max_retries=3, base_delay=2)
     def generate_text(
         self,
         prompt: str,
@@ -216,6 +238,9 @@ class TextChatClient:
             elif status_code >= 500:
                 raise Exception(
                     f"⚠️ API 服务器错误 ({status_code})\n\n"
+                    f"【服务端详情】: {error_detail}\n\n"
+                    f"【请求URL】: {self.chat_endpoint}\n\n"
+                    f"【请求模型】: {model}\n\n"
                     "【说明】\n"
                     "这是服务端的临时故障，与您的配置无关。\n\n"
                     "【解决方案】\n"

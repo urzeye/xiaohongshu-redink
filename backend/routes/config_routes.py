@@ -330,6 +330,16 @@ def _clear_config_cache():
     except Exception:
         pass
 
+    try:
+        from backend.application.services import (
+            reset_content_application_service,
+            reset_outline_application_service,
+        )
+        reset_outline_application_service()
+        reset_content_application_service()
+    except Exception:
+        pass
+
 
 def _update_search_config(new_data: dict):
     """更新通用搜索配置。"""

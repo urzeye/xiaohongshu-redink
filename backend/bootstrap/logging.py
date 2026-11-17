@@ -55,6 +55,24 @@ def configure_logging(settings: AppSettings) -> logging.Logger:
 
     root_logger.addHandler(console_handler)
 
+    try:
+        from logging.handlers import RotatingFileHandler
+
+        log_dir = settings.project_root / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        file_handler = RotatingFileHandler(
+            log_dir / "redink.log",
+            maxBytes=10 * 1024 * 1024,
+            backupCount=5,
+            encoding="utf-8",
+        )
+        file_handler.setLevel(settings.log_level)
+        file_handler.setFormatter(_build_formatter(settings.structured_logging))
+        file_handler.addFilter(TraceIdFilter())
+        root_logger.addHandler(file_handler)
+    except Exception as e:
+        sys.stderr.write(f"Failed to setup file logging: {e}\n")
+
     logging.getLogger("backend").setLevel(settings.log_level)
     logging.getLogger("werkzeug").setLevel(logging.INFO)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
