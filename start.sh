@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# MotifLab - 启动脚本
+# RedInk (xiaohongshu-redink) - 启动脚本
 
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -11,7 +11,7 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${BLUE}🚀 MotifLab${NC}"
+echo -e "${BLUE}🚀 RedInk (xiaohongshu-redink)${NC}"
 echo ""
 
 # 检查依赖

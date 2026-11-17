@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# MotifLab 一键启动脚本
+# RedInk (xiaohongshu-redink) 一键启动脚本
 # 启动所有服务：xiaohongshu-mcp + 后端 + 前端
 
 set -e
@@ -24,7 +24,7 @@ cd "$PROJECT_DIR"
 clear
 echo -e "${CYAN}"
 echo "╔═══════════════════════════════════════════════╗"
-echo "║     🚀 MotifLab 一键启动                     ║"
+echo "║     🚀 RedInk (xiaohongshu-redink) 一键启动   ║"
 echo "╚═══════════════════════════════════════════════╝"
 echo -e "${NC}"
 

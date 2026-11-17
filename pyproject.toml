@@ -1,7 +1,7 @@
 [project]
-name = "motiflab"
+name = "redink"
 version = "0.3.5"
-description = "MotifLab"
+description = "RedInk (xiaohongshu-redink) - 开源小红书 AI 爆款图文生成与批量发布工具"
 requires-python = ">=3.9"
 dependencies = [
     "flask>=3.0.0",

@@ -186,7 +186,7 @@ def create_app(settings: AppSettings | None = None) -> Flask:
     """创建并装配 Flask 应用。"""
     runtime_settings = settings or AppSettings.from_env()
     logger = configure_logging(runtime_settings)
-    logger.info("[BOOT] 正在启动 MotifLab...")
+    logger.info(f"[BOOT] 正在启动 {runtime_settings.app_name} (xiaohongshu-redink)...")
 
     app = _create_flask_app(runtime_settings, logger)
     app.extensions["backend_container"] = build_container()

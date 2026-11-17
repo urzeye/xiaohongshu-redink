@@ -7,8 +7,8 @@
     <script>
       (function () {
         try {
-          var key = "motiflab-theme";
-          var saved = localStorage.getItem(key);
+          var key = "redink-theme";
+          var saved = localStorage.getItem(key) || localStorage.getItem("motiflab-theme");
           var prefersDark =
             typeof window.matchMedia === "function" &&
             window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -33,7 +33,7 @@
         }
       })();
     </script>
-    <title>MotifLab - AI 创作平台</title>
+    <title>RedInk 红墨 - 小红书 AI 爆款图文创作平台</title>
   </head>
   <body>
     <div id="app"></div>

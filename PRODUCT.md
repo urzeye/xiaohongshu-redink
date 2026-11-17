@@ -44,7 +44,7 @@ web
 
 ## Brand Commitments
 
-- **核心品牌名称**：RedInk（代码库及文档历史演进中曾出现 MotifLab 与 渲染AI，官方确立核心品牌延续为 RedInk）。
+- **核心品牌名称**：RedInk / 红墨（开源仓库：xiaohongshu-redink；延续并重构自原项目 RedInk）。
 - **品牌口号**：让传播不再需要门槛，让创作从未如此简单。
 - **品牌气质**：高效、敏捷、懂社媒流量密码、专业可信赖的创作者伙伴。
 

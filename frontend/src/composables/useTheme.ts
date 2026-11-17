@@ -2,7 +2,8 @@ import { ref } from "vue";
 
 export type ThemeType = "system" | "light" | "dark";
 
-const STORAGE_KEY = "motiflab-theme";
+const STORAGE_KEY = "redink-theme";
+const LEGACY_STORAGE_KEY = "motiflab-theme";
 const theme = ref<ThemeType>("system");
 const isDark = ref(true);
 
@@ -58,7 +59,7 @@ const initializeTheme = () => {
 
   ensureMediaQuery();
 
-  const savedTheme = localStorage.getItem(STORAGE_KEY);
+  const savedTheme = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
   if (isValidTheme(savedTheme)) {
     theme.value = savedTheme;
   }

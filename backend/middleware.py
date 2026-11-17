@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def _get_auth_token() -> str:
     """读取访问令牌（运行时读取，支持热更新环境变量）"""
-    return os.environ.get('MOTIFLAB_AUTH_TOKEN', '').strip()
+    return (os.environ.get('REDINK_AUTH_TOKEN') or os.environ.get('MOTIFLAB_AUTH_TOKEN', '')).strip()
 
 
 def is_auth_enabled() -> bool:

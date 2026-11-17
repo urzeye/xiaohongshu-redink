@@ -17,7 +17,7 @@
           <div class="logo-area">
             <img
               src="/logo-banner.png"
-              alt="渲染AI"
+              alt="RedInk"
               class="logo-icon"
             />
           </div>
@@ -558,8 +558,8 @@
               class="global-footer"
             >
               <div class="footer-content">
-                <div class="footer-tip">渲染AI - AI驱动的图文创作工具</div>
-                <div class="footer-text">© 2025 渲染AI (RenderAI)</div>
+                <div class="footer-tip">RedInk (红墨) - 小红书 AI 驱动的爆款图文创作工具</div>
+                <div class="footer-text">© 2026 RedInk (xiaohongshu-redink)</div>
                 <div class="footer-license">
                   Licensed under
                   <a

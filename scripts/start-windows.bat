@@ -2,16 +2,16 @@
 chcp 65001 >nul 2>&1
 setlocal EnableDelayedExpansion
 
-:: MotifLab AI图文生成器 - Windows 启动脚本
+:: RedInk (xiaohongshu-redink) AI图文生成器 - Windows 启动脚本
 
-title MotifLab AI图文生成器
+title RedInk AI图文生成器 (xiaohongshu-redink)
 
 cd /d "%~dp0\.."
 
 cls
 echo.
 echo ╔═══════════════════════════════════════════════╗
-echo ║     🪟 MotifLab AI图文生成器 - Windows 版     ║
+echo ║ 🪟 RedInk AI图文生成器 (xiaohongshu-redink) ║
 echo ╚═══════════════════════════════════════════════╝
 echo.
 
@@ -95,9 +95,9 @@ echo.
 
 :: 启动后端 (新窗口，蓝色背景)
 if %USE_UV% equ 1 (
-    start "MotifLab-后端-12398" cmd /k "color 1F && title MotifLab 后端服务 [12398] && uv run python backend/app.py"
+    start "RedInk-后端-12398" cmd /k "color 1F && title RedInk 后端服务 [12398] && uv run python backend/app.py"
 ) else (
-    start "MotifLab-后端-12398" cmd /k "color 1F && title MotifLab 后端服务 [12398] && python backend/app.py"
+    start "RedInk-后端-12398" cmd /k "color 1F && title RedInk 后端服务 [12398] && python backend/app.py"
 )
 
 :: 等待后端启动
@@ -106,7 +106,7 @@ timeout /t 3 /nobreak >nul
 
 :: 启动前端 (新窗口，绿色背景)
 cd frontend
-start "MotifLab-前端-5173" cmd /k "color 2F && title MotifLab 前端服务 [5173] && %PKG_MANAGER% run dev"
+start "RedInk-前端-5173" cmd /k "color 2F && title RedInk 前端服务 [5173] && %PKG_MANAGER% run dev"
 cd ..
 
 :: 等待前端启动
