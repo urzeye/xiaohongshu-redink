@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T05:56:00Z",
+  "title": "Design System: RedInk",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Crimson Seal",
+        "canonical": "#ff2442",
+        "tonalRamp": ["#3b0007", "#730012", "#ab001c", "#e61731", "#ff2442", "#ff4d63", "#ff8093", "#ffd9df"]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Obsidian Press",
+        "canonical": "#0a0a0b",
+        "tonalRamp": ["#050505", "#0a0a0b", "#16161a", "#1c1c21", "#27272a", "#52525b", "#a1a1aa", "#ffffff"]
+      },
+      "neutral-card": {
+        "role": "neutral",
+        "displayName": "Graphite Bed",
+        "canonical": "#16161a",
+        "tonalRamp": ["#0a0a0b", "#111113", "#16161a", "#1c1c21", "#27272a", "#3f3f46", "#71717a", "#a1a1aa"]
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Signal Emerald",
+        "canonical": "#10b981",
+        "tonalRamp": ["#022c22", "#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#34d399", "#d1fae5"]
+      },
+      "error": {
+        "role": "status",
+        "displayName": "Signal Ruby",
+        "canonical": "#ef4444",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fee2e2"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "英雄区核心大标题与关键数字展示" },
+      "headline": { "displayName": "Headline", "purpose": "页面主标题 (H1 / Page Title)" },
+      "title": { "displayName": "Title", "purpose": "模块标题与卡片标题 (H2 / Section Title)" },
+      "body": { "displayName": "Body", "purpose": "主要正文与操作说明" },
+      "label": { "displayName": "Label", "purpose": "徽章、标签与元数据" }
+    },
+    "shadows": [
+      { "name": "subtle-surface", "value": "0 4px 24px rgba(0, 0, 0, 0.2)", "purpose": "卡片静止状态环境遮蔽" },
+      { "name": "lifted-surface", "value": "0 8px 32px rgba(0, 0, 0, 0.3)", "purpose": "悬停与浮动卡片立体抬升" },
+      { "name": "crimson-glow", "value": "0 0 20px rgba(255, 36, 66, 0.3)", "purpose": "主行动号召按钮特征发光光晕" }
+    ],
+    "motion": [
+      { "name": "ease-fast", "value": "150ms ease", "purpose": "按钮按压、微悬浮与颜色切换" },
+      { "name": "ease-base", "value": "250ms ease", "purpose": "卡片过渡、折叠栏与菜单展开" },
+      { "name": "ease-slow", "value": "400ms cubic-bezier(0.25, 0.8, 0.25, 1)", "purpose": "弹窗浮现与页面切换" }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "768px" },
+      { "name": "md", "value": "992px" },
+      { "name": "lg", "value": "1200px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "核心主行动号召按钮，带有签名级深红光晕",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z\"/></svg>立即生成图文</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #ff2442; color: #ffffff; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(255, 36, 66, 0.3); transition: all 150ms ease; font-family: 'Inter', sans-serif; } .ds-btn-primary:hover { background: #ff4d63; transform: translateY(-2px); box-shadow: 0 0 30px rgba(255, 36, 66, 0.45); } .ds-btn-primary:active { transform: translateY(0); background: #e61731; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "次要操作按钮，暗色抬升与微边框",
+      "html": "<button class=\"ds-btn-secondary\">查看历史记录</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #1c1c21; color: #ffffff; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; border: 1px solid #27272a; cursor: pointer; transition: all 150ms ease; font-family: 'Inter', sans-serif; } .ds-btn-secondary:hover { background: #16161a; border-color: #3f3f46; transform: translateY(-2px); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "轻量幽灵按钮，用于次要取消或退回操作",
+      "html": "<button class=\"ds-btn-ghost\">取消应用</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: #a1a1aa; padding: 12px 20px; border-radius: 8px; font-weight: 500; font-size: 14px; border: 1px solid transparent; cursor: pointer; transition: all 150ms ease; font-family: 'Inter', sans-serif; } .ds-btn-ghost:hover { background: #1c1c21; color: #ffffff; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "深邃内嵌输入框，聚焦带有微红光环",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"输入创作主题或长文...\" />",
+      "css": ".ds-input { width: 100%; box-sizing: border-box; background: #0d0d0e; border: 1px solid #27272a; border-radius: 8px; padding: 16px 20px; font-size: 16px; color: #ffffff; outline: none; transition: all 150ms ease; font-family: 'Inter', sans-serif; } .ds-input:focus { border-color: #ff2442; background: #16161a; box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.08); } .ds-input::placeholder { color: #52525b; }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "主要内容容器卡片，暗色色调分层与轻抬升",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">智能大纲生成</h3><p class=\"ds-card-desc\">AI 已完成 5 页结构编排，点击可自由调整标题与每页描述。</p></div>",
+      "css": ".ds-card { background: #16161a; border: 1px solid #27272a; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2); transition: all 250ms ease; font-family: 'Inter', sans-serif; } .ds-card:hover { border-color: #3f3f46; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); } .ds-card-title { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #ffffff; } .ds-card-desc { margin: 0; font-size: 14px; line-height: 1.5; color: #a1a1aa; }"
+    },
+    {
+      "name": "Filter Tag Chip",
+      "kind": "chip",
+      "refersTo": "tag-chip",
+      "description": "分类与状态标签，激活时带有透明深红填充",
+      "html": "<div class=\"ds-tag-group\"><span class=\"ds-tag ds-tag-active\">小红书图文</span><span class=\"ds-tag\">概念图</span><span class=\"ds-tag\">模板市场</span></div>",
+      "css": ".ds-tag-group { display: flex; gap: 8px; } .ds-tag { display: inline-flex; align-items: center; padding: 8px 16px; background: #1c1c21; border: 1px solid #27272a; border-radius: 8px; font-size: 14px; font-weight: 500; color: #a1a1aa; cursor: pointer; transition: all 150ms ease; font-family: 'Inter', sans-serif; } .ds-tag:hover { background: #16161a; color: #ffffff; border-color: #3f3f46; } .ds-tag-active { background: rgba(255, 36, 66, 0.12); border-color: #ff2442; color: #ff2442; font-weight: 600; }"
+    },
+    {
+      "name": "Brand Pill Badge",
+      "kind": "custom",
+      "refersTo": "brand-pill",
+      "description": "英雄区药丸徽章，展示系统定位与高光特性",
+      "html": "<div class=\"ds-brand-pill\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z\"/></svg>AI 驱动的可视化创作平台</div>",
+      "css": ".ds-brand-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(255, 36, 66, 0.08); color: #ff2442; border-radius: 99px; font-size: 13px; font-weight: 600; border: 1px solid rgba(255, 36, 66, 0.2); font-family: 'Inter', sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Viral Press",
+    "overview": "RedInk 是一套专为自媒体与社媒爆款图文打造的工业级生产力设计系统。其核心理念“The Viral Press”融合了现代高精度工业制版的确定性与数字排版工作室的沉浸质感。整个界面采用深黑曜石基底构建“静音操作台”，消除所有非必要的多余装饰，将 100% 的视觉重量与注意力完全归还给用户正在构思与生成的图文内容。\n\n系统在视觉表现上奉行严苛的高对比度与克制主义：主强调色采用极具张力的小红书印鉴红（#ff2442），它如同加盖在排版稿件上的权威印章与行动信号，在深邃的暗调背景中以微光晕（Crimson Glow）精准指引高价值交互，果断而克制。",
+    "keyCharacteristics": [
+      "极黑沉浸静音画布：以 #0a0a0b 为底色，通过微弱色调阶梯（Tonal Layering）自然界定层级，无反光干扰。",
+      "印鉴级视觉重音：纯正鲜艳的绯红色（#ff2442）作为唯一核心品牌信号，仅在关键转化与状态点亮。",
+      "确定性工业手感：紧密贴合的 1px 细微暗调边框、内嵌式输入框与适度倒角（8px/12px/16px），带来可靠沉稳的操作反馈。",
+      "社媒原生叙事比例：排版布局围绕小红书 3:4 竖版多图流展开，保持原生态的移动端卡片感。"
+    ],
+    "rules": [
+      {
+        "name": "The Crimson Seal Rule",
+        "body": "主强调红（#ff2442）在单一视口中的色彩面积严格控制在 ≤5%。红色的克制与稀缺正是其作为爆款印鉴权威感的来源；严禁将大面积背景或长文本涂抹为红色。",
+        "section": "colors"
+      },
+      {
+        "name": "The Content Hierarchy Rule",
+        "body": "页面各视口内标题、说明与正文字号跳跃比不低于 1.4 倍，副标题与标签必须使用置灰文本色（#a1a1aa / #71717a），确保创作者扫视时瞬间分辨信息层级。",
+        "section": "typography"
+      },
+      {
+        "name": "The Quiet Canvas Rule",
+        "body": "界面的空间感必须首先通过背景明度阶梯（#0a0a0b 底色 -> #16161a 容器 -> #1c1c21 悬浮项）与 1px 微边框表达。阴影仅作为交互状态的微动效反馈（悬停上升 2px），严禁在静止态使用厚重发光或刺眼投影。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "严格保持暗黑静音底色（#0a0a0b），确保所有内容卡片有明确的 1px 微边框（#27272a）包裹。",
+      "将主按钮、关键触发操作与核心选中态精准赋予 Crimson Seal（#ff2442）微光晕。",
+      "在所有图文预览中保持 3:4 原生竖图比例，真实还原小红书移动端阅读体验。",
+      "在异步图文批量渲染时展示清晰的分步骤进度条与单卡片重试入口。"
+    ],
+    "donts": [
+      "在背景或装饰容器上使用大面积高饱和度红色渐变，避免视觉疲劳与抢夺注意力。",
+      "使用未经收敛的纯白色边框（禁止使用 #ffffff 作为边框色），必须使用 #27272a 或带有半透明度的暗色描边。",
+      "在同一屏幕中并列放置两个以上的顶级红色实体主按钮，破坏单一行动焦点。",
+      "混合使用随意圆角；严格遵循 4px/8px/12px/16px 的阶梯规范。"
+    ]
+  }
+}
