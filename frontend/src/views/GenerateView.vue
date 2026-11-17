@@ -1,23 +1,43 @@
 <template>
   <div class="container launch-page">
+    <CreationStepper current-step="result" />
+
     <div class="card launch-card">
-      <h1 class="page-title">准备生成</h1>
+      <div class="launch-icon-pulse">
+        <svg
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+          <line x1="16" y1="8" x2="2" y2="22"></line>
+          <line x1="17.5" y1="15" x2="9" y2="15"></line>
+        </svg>
+      </div>
+
+      <h1 class="page-title">准备并行渲染</h1>
       <p class="page-subtitle" v-if="!errorText">
-        正在创建图片任务，即将进入结果页并并行生成图片与文案...
+        正在建立多图并发任务通道，即将进入实时渲染面板并同步生成爆款文案...
       </p>
 
       <div v-if="!errorText" class="launch-loading">
         <div class="spinner"></div>
+        <span class="loading-hint">正在调度模型与图像提供商...</span>
       </div>
 
       <div v-else class="launch-error">
         <p>{{ errorText }}</p>
         <div class="actions">
           <button class="btn btn-primary" @click="launch" :disabled="launching">
-            重试
+            立即重试
           </button>
-          <button class="btn" @click="router.push('/redbook/outline')">
-            返回大纲
+          <button class="btn btn-secondary" @click="router.push('/redbook/outline')">
+            返回大纲编辑
           </button>
         </div>
       </div>
@@ -30,6 +50,7 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useGeneratorStore } from "../stores/generator";
 import { createHistory, createImageJob, updateHistory } from "../api";
+import CreationStepper from "../components/home/CreationStepper.vue";
 
 const router = useRouter();
 const store = useGeneratorStore();
@@ -58,8 +79,8 @@ async function launch() {
   errorText.value = "";
 
   try {
-    if (store.outline.pages.length === 0) {
-      router.push("/");
+    if (!store.outline.pages || store.outline.pages.length === 0) {
+      router.push("/redbook");
       return;
     }
 
@@ -115,47 +136,89 @@ onMounted(() => {
 <style scoped>
 .launch-page {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 70vh;
+  min-height: 65vh;
+  max-width: 800px;
 }
 
 .launch-card {
-  width: min(680px, 100%);
+  width: min(640px, 100%);
   text-align: center;
-  padding: 40px 28px;
+  padding: 48px 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.launch-icon-pulse {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 36, 66, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  box-shadow: 0 0 24px rgba(255, 36, 66, 0.2);
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+.page-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.6;
+  max-width: 480px;
+  margin: 0 auto 28px;
 }
 
 .launch-loading {
-  margin-top: 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
-.spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--primary);
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
+.loading-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .launch-error {
-  margin-top: 16px;
-  color: var(--color-error, #ff4d4f);
+  margin-top: 20px;
+  color: var(--color-error);
+  font-size: 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 16px;
+  border-radius: var(--radius-md);
 }
 
 .actions {
   margin-top: 16px;
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 36, 66, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 32px rgba(255, 36, 66, 0.4);
   }
 }
 </style>

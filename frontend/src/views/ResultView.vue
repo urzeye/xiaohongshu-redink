@@ -1,5 +1,8 @@
 <template>
-  <div class="container">
+  <div class="container result-page-container">
+    <!-- 创作流程指示器 -->
+    <CreationStepper current-step="result" />
+
     <div class="page-header">
       <div>
         <h1 class="page-title">{{ isGenerating ? "正在生成" : "创作完成" }}</h1>
@@ -17,15 +20,15 @@
         </p>
       </div>
       <div class="header-actions" style="display: flex; gap: 12px">
-        <button class="btn" @click="startOver">再来一篇</button>
-        <button class="btn" @click="downloadAll" :disabled="isGenerating">
+        <button class="btn btn-secondary" @click="startOver">再来一篇</button>
+        <button class="btn btn-secondary" @click="downloadAll" :disabled="isGenerating">
           <svg
             width="16"
             height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2.5"
+            stroke-width="2.2"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
@@ -46,7 +49,7 @@
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2.5"
+            stroke-width="2.2"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
@@ -64,12 +67,15 @@
       v-if="store.progress.total > 0"
     >
       <div class="progress-row">
-        <span class="progress-label">图片进度</span>
-        <span class="progress-value">{{ Math.round(progressPercent) }}%</span>
+        <span class="progress-label">图片生成进度</span>
+        <span class="progress-value" :class="{ done: progressPercent >= 100 }">
+          {{ Math.round(progressPercent) }}%
+        </span>
       </div>
       <div class="progress-track">
         <div
           class="progress-bar"
+          :class="{ done: progressPercent >= 100 }"
           :style="{ width: `${progressPercent}%` }"
         ></div>
       </div>
@@ -229,21 +235,33 @@
 
 .progress-value {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--color-info);
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-value.done {
+  color: var(--color-success);
 }
 
 .progress-track {
   height: 8px;
   border-radius: 999px;
-  background: var(--bg-active);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background: var(--color-info);
-  transition: width 0.25s ease;
+  background: var(--primary);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(255, 36, 66, 0.4);
+}
+
+.progress-bar.done {
+  background: var(--color-success);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .error-text {
@@ -572,6 +590,7 @@ import {
   withAccessToken,
 } from "../api";
 import ContentDisplay from "../components/result/ContentDisplay.vue";
+import CreationStepper from "../components/home/CreationStepper.vue";
 import { useMessage } from "naive-ui";
 
 const router = useRouter();

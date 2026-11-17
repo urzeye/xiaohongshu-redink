@@ -245,12 +245,45 @@
           class="btn btn-primary generate-btn"
           @click="$emit('generate')"
           :disabled="!modelValue.trim() || loading"
+          title="生成大纲 (按 Enter 直接触发)"
         >
           <span
             v-if="loading"
             class="spinner-sm"
           ></span>
-          <span v-else>生成大纲</span>
+          <template v-else>
+            <span>生成大纲</span>
+            <span class="btn-kbd">↵</span>
+          </template>
+        </button>
+      </div>
+    </div>
+
+    <!-- 灵感推荐热词 -->
+    <div class="inspiration-section">
+      <span class="inspiration-label">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        灵感热词
+      </span>
+      <div class="inspiration-chips">
+        <button
+          v-for="chip in inspirationTopics"
+          :key="chip"
+          type="button"
+          class="inspiration-chip"
+          @click="selectInspiration(chip)"
+          :disabled="loading"
+        >
+          {{ chip }}
         </button>
       </div>
     </div>
@@ -333,6 +366,23 @@ const searchProviderModel = computed({
 });
 
 const message = useMessage();
+
+// 灵感热词列表
+const inspirationTopics = [
+  "秋季显白美甲灵感合集",
+  "自媒体爆款排版拆解手册",
+  "程序员效率倍增工作流",
+  "低预算独居租房改造",
+  "周末治愈系Citywalk宝藏地图",
+];
+
+function selectInspiration(topic: string) {
+  emit("update:modelValue", topic);
+  setTimeout(() => {
+    adjustHeight();
+    textareaRef.value?.focus();
+  }, 50);
+}
 
 /**
  * 处理输入变化
@@ -910,28 +960,93 @@ defineExpose({
 
 /* 生成按钮 */
 .generate-btn {
-  padding: 12px 28px;
-  font-size: 15px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: var(--primary);
-  color: var(--text-inverse);
-  box-shadow: var(--primary-glow);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(255, 36, 66, 0.28);
+  transition: all var(--transition-fast);
 }
 
 .generate-btn:hover:not(:disabled) {
   background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(255, 36, 66, 0.38);
+}
+
+.generate-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .generate-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.btn-kbd {
+  font-size: 11px;
+  opacity: 0.85;
+  padding: 2px 5px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* 灵感推荐热词 */
+.inspiration-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.inspiration-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.inspiration-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inspiration-chip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-sub);
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.inspiration-chip:hover:not(:disabled) {
+  background: var(--primary-fade);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.inspiration-chip:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .status-indicator.ready {

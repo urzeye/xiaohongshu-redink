@@ -455,6 +455,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .category-pill:hover {
@@ -469,7 +470,7 @@ onMounted(async () => {
 }
 
 .category-pill.active .count {
-  background: rgba(0, 255, 136, 0.16);
+  background: var(--primary-light);
   color: var(--primary);
 }
 
@@ -552,7 +553,7 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--primary);
   background: var(--primary-light);
-  border: 1px solid rgba(0, 255, 136, 0.35);
+  border: 1px solid var(--primary-light);
   border-radius: 999px;
   padding: 4px 8px;
 }
@@ -560,12 +561,14 @@ onMounted(async () => {
 .usage-mini {
   font-size: 12px;
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .card-title {
   margin: 12px 0 8px;
   font-size: 18px;
   line-height: 1.4;
+  text-wrap: balance;
 }
 
 .card-desc {

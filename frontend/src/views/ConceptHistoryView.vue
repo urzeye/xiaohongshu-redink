@@ -7,7 +7,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">概念可视化历史</h1>
-        <p class="page-subtitle">查看之前生成的概念图</p>
+        <p class="page-subtitle">查看和管理已沉淀的概念结构图与分析蓝图</p>
       </div>
       <button
         class="btn btn-primary"

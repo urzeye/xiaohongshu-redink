@@ -1068,9 +1068,10 @@ onMounted(() => {
 .viz-type {
   font-size: 11px;
   padding: 3px 8px;
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--primary);
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--color-info);
   border-radius: var(--radius-sm);
+  font-weight: 500;
 }
 
 .concept-desc {
@@ -1304,12 +1305,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 16px 20px;
   background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
   border-radius: var(--radius-md);
   margin-top: 20px;
-  color: var(--primary);
+  color: var(--color-info);
   font-size: 14px;
+  font-weight: 500;
 }
 
 /* Completion section */

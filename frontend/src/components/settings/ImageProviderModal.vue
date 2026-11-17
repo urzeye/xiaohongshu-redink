@@ -166,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { imageProviderPresets } from '../../composables/useProviderForm'
 
 /**
@@ -217,6 +217,20 @@ const emit = defineEmits<{
   (e: 'test'): void
   (e: 'update:formData', data: FormData): void
 }>()
+
+function handleEsc(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.visible) {
+    emit('close')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleEsc)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleEsc)
+})
 
 // 当前选中的预设
 const currentPreset = computed(() => {
@@ -300,7 +314,8 @@ const previewUrl = computed(() => {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -473,7 +488,7 @@ const previewUrl = computed(() => {
 
 .toggle-switch.active .toggle-slider {
   transform: translateX(20px);
-  background: var(--text-inverse);
+  background: #ffffff;
 }
 
 /* 底部 */
@@ -506,7 +521,7 @@ const previewUrl = computed(() => {
 .btn-primary {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-on-primary, #ffffff);
   box-shadow: var(--primary-glow);
 }
 

@@ -22,14 +22,14 @@
               d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"
             />
           </svg>
-          AI 驱动的图文创作助手
+          AI 驱动的图文创作工坊
         </div>
         <div class="platform-slogan">
           让传播不再需要门槛，让创作从未如此简单
         </div>
         <h1 class="page-title">灵感一触即发</h1>
         <p class="page-subtitle">
-          输入你的创意主题，让 AI 帮你生成爆款标题、正文和封面图
+          输入你的创意主题，AI 即可智能规划大纲、匹配排版并批量渲染 3:4 爆款图文卡片
         </p>
       </div>
 
@@ -52,11 +52,10 @@
           </div>
           <div class="banner-text">
             <div class="banner-title">
-              已应用模板：{{ appliedTemplate.title }}
+              已载入模板：{{ appliedTemplate.title }}
             </div>
             <div class="banner-sub">
-              分类：{{ appliedTemplate.category }} ·
-              将参考此模板的布局和风格，主题请自行输入
+              分类：{{ appliedTemplate.category }} · 将承接此模板的排版与视觉风格
             </div>
           </div>
         </div>
@@ -144,7 +143,14 @@
         <line x1="12" y1="8" x2="12" y2="12"></line>
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
-      {{ error }}
+      <span class="error-text">{{ error }}</span>
+      <button
+        class="error-toast-close"
+        @click="error = ''"
+        aria-label="关闭提示"
+      >
+        ✕
+      </button>
     </div>
   </div>
 </template>
@@ -777,6 +783,65 @@ watch(
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* 错误 Toast 提示 */
+.error-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--color-error-border, rgba(239, 68, 68, 0.4));
+  color: var(--text-main);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px rgba(239, 68, 68, 0.15);
+  z-index: 1000;
+  animation: slideUpToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: min(560px, 92vw);
+}
+
+.error-toast svg {
+  color: var(--color-error);
+  flex-shrink: 0;
+}
+
+.error-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+.error-toast-close {
+  background: transparent;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-left: auto;
+  border-radius: var(--radius-xs);
+  transition: all var(--transition-fast);
+  font-size: 13px;
+}
+
+.error-toast-close:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+
+@keyframes slideUpToast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 }
 

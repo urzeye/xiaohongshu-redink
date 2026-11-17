@@ -5,7 +5,7 @@
     v-if="stats"
   >
     <div class="stat-box">
-      <div class="stat-icon-circle blue">
+      <div class="stat-icon-circle primary">
         <svg
           width="24"
           height="24"
@@ -151,19 +151,19 @@ defineProps<{
   flex-shrink: 0;
 }
 
-.stat-icon-circle.blue {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+.stat-icon-circle.primary {
+  background: var(--primary-light, rgba(255, 36, 66, 0.12));
+  color: var(--primary);
 }
 
 .stat-icon-circle.green {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  background: var(--color-success-bg, rgba(16, 185, 129, 0.15));
+  color: var(--color-success);
 }
 
 .stat-icon-circle.orange {
-  background: rgba(249, 115, 22, 0.1);
-  color: #f97316;
+  background: var(--color-warning-bg, rgba(245, 158, 11, 0.15));
+  color: var(--color-warning);
 }
 
 /* 统计内容 */
@@ -179,6 +179,8 @@ defineProps<{
   font-weight: 700;
   color: var(--text-main);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* 响应式布局 */

@@ -193,13 +193,14 @@ const displayTitle = computed(() => {
 <style scoped>
 /* 卡片容器 */
 .gallery-card {
-  background: white;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-color);
   transition:
     transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   will-change: transform;
   contain: layout style paint;
@@ -207,13 +208,14 @@ const displayTitle = computed(() => {
 
 .gallery-card:hover {
   transform: translateY(-4px) translateZ(0);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
 }
 
 /* 封面区域 */
 .card-cover {
   aspect-ratio: 3/4;
-  background: #f7f7f7;
+  background: var(--bg-secondary);
   position: relative;
   overflow: hidden;
   cursor: pointer;
@@ -240,16 +242,16 @@ const displayTitle = computed(() => {
   align-items: center;
   justify-content: center;
   font-size: 48px;
-  color: #e0e0e0;
+  color: var(--text-placeholder);
   font-weight: 800;
-  background: #fafafa;
+  background: var(--bg-secondary);
 }
 
 /* 悬浮遮罩层 */
 .card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -257,7 +259,8 @@ const displayTitle = computed(() => {
   gap: 12px;
   opacity: 0;
   transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   pointer-events: none;
   will-change: opacity;
 }
@@ -270,28 +273,28 @@ const displayTitle = computed(() => {
 /* 遮罩层按钮 */
 .overlay-btn {
   padding: 8px 24px;
-  border-radius: 20px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: white;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition:
     background-color 0.2s,
-    color 0.2s,
+    border-color 0.2s,
     transform 0.1s,
     box-shadow 0.2s;
   will-change: transform;
 }
 
 .overlay-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: white;
+  background: var(--primary);
+  border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 36, 66, 0.4);
 }
 
 /* 类型标识 */
@@ -300,11 +303,11 @@ const displayTitle = computed(() => {
   top: 12px;
   right: 12px;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 10px;
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
   backdrop-filter: blur(4px);
 }
 
@@ -322,55 +325,56 @@ const displayTitle = computed(() => {
   top: 12px;
   left: 12px;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 11px;
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
   backdrop-filter: blur(4px);
 }
 
 .status-badge.completed {
-  background: rgba(82, 196, 26, 0.9);
+  background: rgba(16, 185, 129, 0.9);
 }
 
 .status-badge.draft {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
 }
 
 .status-badge.generating,
 .status-badge.in_progress {
-  background: rgba(24, 144, 255, 0.9);
+  background: rgba(59, 130, 246, 0.9);
 }
 
 .status-badge.error {
-  background: rgba(255, 77, 79, 0.9);
+  background: rgba(239, 68, 68, 0.9);
 }
 
 /* 底部区域 */
 .card-footer {
-  padding: 14px 16px 12px;
+  padding: 14px 16px 14px;
 }
 
 .card-title {
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 6px;
-  line-height: 1.35;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  color: #1f2937;
+  color: var(--text-main);
+  text-wrap: balance;
 }
 
 .card-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 12px;
-  color: var(--text-sub, #666);
+  color: var(--text-sub);
 }
 
 .meta-left {
@@ -382,33 +386,40 @@ const displayTitle = computed(() => {
 .meta-chip {
   display: inline-flex;
   align-items: center;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 9px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-xs);
   font-size: 12px;
-  color: #6f7683;
-  background: #f0f2f5;
+  font-weight: 500;
+  color: var(--text-sub);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  font-variant-numeric: tabular-nums;
 }
 
 .meta-time {
-  color: #8f95a3;
+  color: var(--text-secondary);
   letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
 }
 
 .more-btn {
   background: none;
   border: none;
-  color: var(--text-placeholder, #ccc);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: var(--radius-xs);
   transition:
     background-color 0.2s,
     color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .more-btn:hover {
-  background: #fee;
-  color: #ff4d4f;
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 </style>

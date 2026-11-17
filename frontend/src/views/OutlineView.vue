@@ -1,5 +1,8 @@
 <template>
   <div class="container outline-page-container">
+    <!-- 创作流程指示器 -->
+    <CreationStepper current-step="outline" />
+
     <div class="page-header outline-page-header">
       <div class="outline-header-main">
         <h1 class="page-title">编辑大纲</h1>
@@ -55,7 +58,35 @@
       </div>
     </div>
 
-    <div class="outline-grid">
+    <!-- 空状态兜底 -->
+    <div
+      v-if="!store.outline?.pages || store.outline.pages.length === 0"
+      class="card empty-state"
+    >
+      <div class="empty-state-icon">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+      </div>
+      <h2 class="empty-state-title">未检测到有效大纲数据</h2>
+      <p class="empty-state-desc">你可以返回首页重新输入主题，或从历史记录中恢复已保存的草稿。</p>
+      <div style="display: flex; gap: 12px; margin-top: 16px;">
+        <router-link to="/redbook" class="btn btn-primary">返回选题输入</router-link>
+        <router-link to="/history" class="btn btn-secondary">查看历史草稿</router-link>
+      </div>
+    </div>
+
+    <div v-else class="outline-grid">
       <div
         v-for="(page, idx) in store.outline.pages"
         :key="page.index"
@@ -370,6 +401,7 @@ import { ref, nextTick, watch, onMounted, onUnmounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useGeneratorStore } from "../stores/generator";
 import { useMessage, NTooltip } from "naive-ui";
+import CreationStepper from "../components/home/CreationStepper.vue";
 import {
   updateHistory,
   createHistory,
@@ -487,8 +519,11 @@ const onDrop = (_e: DragEvent, index: number) => {
 };
 
 const deletePage = (index: number) => {
-  // Use a confirmation dialog to delete page
-  if (confirm("确定要删除这一页吗？")) {
+  if (store.outline.pages.length <= 1) {
+    message.warning("至少需要保留 1 页大纲内容");
+    return;
+  }
+  if (confirm("确定要删除这一页吗？删除后不可恢复。")) {
     store.deletePage(index);
     message.success("页面已删除");
   }

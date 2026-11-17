@@ -266,13 +266,14 @@ onMounted(() => {
 
 .tab-btn:hover {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--text-main);
 }
 
 .tab-btn.active {
-  background: var(--primary);
+  background: var(--primary-light);
   border-color: var(--primary);
-  color: white;
+  color: var(--primary);
+  font-weight: 600;
 }
 
 /* Content Section */
@@ -356,9 +357,11 @@ onMounted(() => {
 .tag {
   font-size: 11px;
   padding: 3px 8px;
-  background: var(--primary-fade);
-  color: var(--primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-sub);
   border-radius: var(--radius-xs);
+  font-weight: 500;
 }
 
 .card-meta {

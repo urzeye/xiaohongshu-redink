@@ -75,6 +75,8 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from "vue";
+
 /**
  * 大纲查看模态框组件
  *
@@ -93,15 +95,29 @@ interface Page {
 }
 
 // 定义 Props
-defineProps<{
+const props = defineProps<{
   visible: boolean;
   pages: Page[] | null;
 }>();
 
 // 定义 Emits
-defineEmits<{
+const emit = defineEmits<{
   (e: "close"): void;
 }>();
+
+function handleEsc(e: KeyboardEvent) {
+  if (e.key === "Escape" && props.visible) {
+    emit("close");
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", handleEsc);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleEsc);
+});
 
 /**
  * 获取页面类型的中文名称
@@ -121,7 +137,9 @@ function getPageTypeName(type: string): string {
 .outline-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -135,11 +153,12 @@ function getPageTypeName(type: string): string {
   width: 100%;
   max-width: 800px;
   max-height: 85vh;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
 }
 
 /* 模态框头部 */
@@ -156,7 +175,7 @@ function getPageTypeName(type: string): string {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-sub);
+  color: var(--text-main);
 }
 
 /* 关闭按钮 */
@@ -243,7 +262,7 @@ function getPageTypeName(type: string): string {
 
 .page-type-badge.cover {
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-on-primary, #ffffff);
 }
 
 .page-type-badge.content {
@@ -261,6 +280,7 @@ function getPageTypeName(type: string): string {
   margin-left: auto;
   font-size: 11px;
   color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
 }
 
 /* 卡片内容 */

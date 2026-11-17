@@ -1,20 +1,19 @@
 <template>
-  <div class="container">
+  <div class="container publish-page-container">
+    <!-- 创作流程指示器 -->
+    <CreationStepper current-step="publish" />
+
     <div class="page-header">
       <div>
         <h1 class="page-title">发布到小红书</h1>
-        <p class="page-subtitle">将生成的内容发布到小红书平台</p>
+        <p class="page-subtitle">将生成的内容一键发布至小红书创作者平台</p>
       </div>
       <div style="display: flex; gap: 12px">
         <button
-          class="btn"
+          class="btn btn-secondary"
           @click="goBack"
-          style="
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-          "
         >
-          返回结果
+          返回结果页
         </button>
       </div>
     </div>
@@ -370,6 +369,7 @@ import {
   type PublishProgressEvent,
 } from "../api";
 import { useMessage, NImage, NImageGroup, NSelect, NInput } from "naive-ui";
+import CreationStepper from "../components/home/CreationStepper.vue";
 
 const router = useRouter();
 const store = useGeneratorStore();

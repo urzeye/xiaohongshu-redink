@@ -9,17 +9,80 @@
       style="display: contents"
     >
       <n-message-provider style="display: contents">
+        <!-- 移动端顶部顶栏 -->
+        <header class="mobile-header">
+          <RouterLink
+            to="/"
+            class="mobile-brand"
+            @click="sidebarMobileOpen = false"
+          >
+            <img
+              src="/logo.png"
+              alt="RedInk"
+              class="mobile-brand-logo"
+            />
+            <span>RedInk 红墨</span>
+          </RouterLink>
+          <button
+            class="mobile-menu-btn"
+            @click="sidebarMobileOpen = !sidebarMobileOpen"
+            :aria-label="sidebarMobileOpen ? '关闭菜单' : '打开菜单'"
+          >
+            <svg
+              v-if="!sidebarMobileOpen"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <svg
+              v-else
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </header>
+
+        <!-- 移动端侧边栏遮罩 -->
+        <div
+          v-if="sidebarMobileOpen"
+          class="mobile-backdrop"
+          @click="sidebarMobileOpen = false"
+        ></div>
+
         <!-- 侧边栏 Sidebar -->
         <aside
           class="layout-sidebar"
-          :class="{ collapsed: sidebarCollapsed }"
+          :class="{
+            collapsed: sidebarCollapsed,
+            'mobile-open': sidebarMobileOpen,
+          }"
         >
           <div class="logo-area">
-            <img
-              src="/logo-banner.png"
-              alt="RedInk"
-              class="logo-icon"
-            />
+            <RouterLink to="/" class="logo-link">
+              <img
+                src="/logo-banner.png"
+                alt="RedInk"
+                class="logo-icon"
+              />
+            </RouterLink>
           </div>
 
           <nav class="nav-menu">
@@ -550,15 +613,17 @@
         <!-- 主内容区 -->
         <main class="layout-main">
           <RouterView v-slot="{ Component, route }">
-            <component :is="Component" />
+            <transition name="page-fade" mode="out-in">
+              <component :is="Component" :key="route.fullPath" />
+            </transition>
 
-            <!-- 全局页脚版权信息（首页除外） -->
+            <!-- 全局页脚版权信息（首页与小红书创作首页除外） -->
             <footer
               v-if="!['/', '/redbook'].includes(route.path)"
               class="global-footer"
             >
               <div class="footer-content">
-                <div class="footer-tip">RedInk (红墨) - 小红书 AI 驱动的爆款图文创作工具</div>
+                <div class="footer-tip">RedInk (红墨) · 小红书 AI 驱动的爆款图文创作引擎</div>
                 <div class="footer-text">© 2026 RedInk (xiaohongshu-redink)</div>
                 <div class="footer-license">
                   Licensed under
@@ -579,8 +644,8 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView, RouterLink } from "vue-router";
-import { ref, onMounted } from "vue";
+import { RouterView, RouterLink, useRoute } from "vue-router";
+import { ref, watch, onMounted } from "vue";
 import {
   NConfigProvider,
   NMessageProvider,
@@ -596,9 +661,14 @@ const themeOverrides: GlobalThemeOverrides = {
     primaryColorHover: "#ff4d63",
     primaryColorPressed: "#e61731",
     primaryColorSuppl: "#ff4d63",
+    borderRadius: "8px",
+    borderRadiusSmall: "6px",
+    fontFamily:
+      '"Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif',
   },
 };
 
+const route = useRoute();
 const { isDark, theme, setTheme } = useTheme();
 
 const toggleTheme = () => {
@@ -611,21 +681,27 @@ const toggleTheme = () => {
   }
 };
 
-// 侧边栏折叠状态
+// 侧边栏折叠与移动端抽屉状态
 const sidebarCollapsed = ref(false);
+const sidebarMobileOpen = ref(false);
+
+// 路由变化时自动关闭移动端侧边栏抽屉
+watch(
+  () => route.path,
+  () => {
+    sidebarMobileOpen.value = false;
+  }
+);
 
 // 切换侧边栏折叠状态
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value;
-  // 保存状态到 localStorage
   localStorage.setItem("sidebarCollapsed", String(sidebarCollapsed.value));
 };
 
 // 启用自动保存到 localStorage
 onMounted(() => {
   setupAutoSave();
-  // 初始化主题
-  // 恢复侧边栏状态
   const saved = localStorage.getItem("sidebarCollapsed");
   if (saved === "true") {
     sidebarCollapsed.value = true;
@@ -634,6 +710,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.logo-link {
+  display: block;
+  text-decoration: none;
+}
 .theme-switcher-container {
   margin-top: auto;
   margin-bottom: 24px;

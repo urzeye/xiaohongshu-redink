@@ -7,14 +7,14 @@
       </div>
       <div style="display: flex; gap: 10px">
         <button
-          class="btn"
+          class="btn btn-secondary"
           @click="handleScanAll"
           :disabled="isScanning"
         >
           <svg
             v-if="!isScanning"
-            width="18"
-            height="18"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -35,11 +35,11 @@
         </button>
         <button
           class="btn btn-primary"
-          @click="router.push('/')"
+          @click="router.push('/redbook')"
         >
           <svg
-            width="18"
-            height="18"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

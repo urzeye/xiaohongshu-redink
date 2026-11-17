@@ -609,7 +609,7 @@ async function copyTag(tag: string, index: number) {
   width: 48px;
   height: 48px;
   background: var(--color-error);
-  color: var(--text-inverse);
+  color: #ffffff;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -749,6 +749,7 @@ async function copyTag(tag: string, index: number) {
   color: var(--text-main);
   line-height: 1.7;
   word-break: break-word;
+  text-wrap: balance;
 }
 
 .title-copy-btn {
@@ -781,6 +782,7 @@ async function copyTag(tag: string, index: number) {
   font-size: 15px;
   line-height: 1.8;
   color: var(--text-main);
+  text-wrap: pretty;
 }
 
 .copywriting-content p {

@@ -4,25 +4,32 @@
       <!-- 小红书模式 -->
       <div
         class="mode-card redbook"
+        tabindex="0"
+        role="button"
+        aria-label="选择小红书图文模式"
         @click="$emit('select', 'redbook')"
+        @keydown.enter.prevent="$emit('select', 'redbook')"
+        @keydown.space.prevent="$emit('select', 'redbook')"
       >
+        <span class="mode-badge redbook-badge">爆款优选</span>
         <div class="mode-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>
             <polyline points="21 15 16 10 5 21"/>
           </svg>
         </div>
-        <h3 class="mode-title">小红书图文</h3>
-        <p class="mode-desc">生成小红书风格的图文内容，包括标题、文案、标签和配图</p>
+        <h2 class="mode-title">小红书图文</h2>
+        <p class="mode-desc">工业级批量生产小红书爆款图文卡片，智能拆解大纲、封面排版与内页并发渲染</p>
         <div class="mode-features">
-          <span class="feature-tag">AI 生成封面</span>
-          <span class="feature-tag">智能标签</span>
-          <span class="feature-tag">爆款文案</span>
+          <span class="feature-tag">3:4 原生比例</span>
+          <span class="feature-tag">智能大纲</span>
+          <span class="feature-tag">多图并发生成</span>
+          <span class="feature-tag">一键直发</span>
         </div>
         <div class="mode-action">
-          <span>开始创作</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <span>进入创作工坊</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </div>
@@ -31,10 +38,16 @@
       <!-- 概念图模式 -->
       <div
         class="mode-card concept"
+        tabindex="0"
+        role="button"
+        aria-label="选择概念可视化模式"
         @click="$emit('select', 'concept')"
+        @keydown.enter.prevent="$emit('select', 'concept')"
+        @keydown.space.prevent="$emit('select', 'concept')"
       >
+        <span class="mode-badge concept-badge">知识图解</span>
         <div class="mode-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"/>
             <circle cx="4" cy="6" r="2"/>
             <circle cx="20" cy="6" r="2"/>
@@ -46,16 +59,17 @@
             <line x1="18" y1="18" x2="14.5" y2="14"/>
           </svg>
         </div>
-        <h3 class="mode-title">概念可视化</h3>
-        <p class="mode-desc">将学术文章或复杂概念转换为清晰的可视化概念图</p>
+        <h2 class="mode-title">概念可视化</h2>
+        <p class="mode-desc">输入长篇论文或复杂业务理论，自动映射至经典分析模型，输出高精度蓝图图解</p>
         <div class="mode-features">
-          <span class="feature-tag">理论框架</span>
-          <span class="feature-tag">概念映射</span>
-          <span class="feature-tag">知识图谱</span>
+          <span class="feature-tag">27+ 理论框架</span>
+          <span class="feature-tag">图表映射</span>
+          <span class="feature-tag">蓝图视觉</span>
+          <span class="feature-tag">学术严谨</span>
         </div>
         <div class="mode-action">
-          <span>开始创作</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <span>构建概念蓝图</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </div>
@@ -87,84 +101,122 @@ defineEmits<{
   position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 32px;
+  border-radius: var(--radius-xl);
+  padding: 36px 32px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mode-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.mode-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.02em;
+}
+
+.redbook-badge {
+  background: rgba(255, 36, 66, 0.12);
+  color: #ff4d63;
+  border: 1px solid rgba(255, 36, 66, 0.25);
+}
+
+.concept-badge {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
 }
 
 .mode-card:hover {
-  border-color: var(--primary);
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
 }
 
 .mode-card.redbook:hover {
-  border-color: #ff2442;
+  border-color: rgba(255, 36, 66, 0.6);
+  box-shadow: 0 16px 40px rgba(255, 36, 66, 0.08), 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .mode-card.concept:hover {
-  border-color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 16px 40px rgba(59, 130, 246, 0.08), 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .mode-icon {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
 }
 
 .mode-card.redbook .mode-icon {
-  background: linear-gradient(135deg, #ff2442 0%, #ff6b6b 100%);
+  background: linear-gradient(135deg, #ff2442 0%, #ff526a 100%);
   color: white;
 }
 
 .mode-card.concept .mode-icon {
-  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: white;
 }
 
 .mode-title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--text-main);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
 }
 
 .mode-desc {
   font-size: 14px;
   color: var(--text-sub);
   line-height: 1.6;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  flex: 1;
 }
 
 .mode-features {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .feature-tag {
   font-size: 12px;
-  padding: 4px 10px;
-  border-radius: var(--radius-xs);
-  background: var(--bg-secondary);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
   color: var(--text-sub);
+  border: 1px solid var(--border-color);
+  font-weight: 500;
 }
 
 .mode-card.redbook .feature-tag {
-  background: rgba(255, 36, 66, 0.1);
-  color: #ff2442;
+  background: rgba(255, 36, 66, 0.08);
+  border-color: rgba(255, 36, 66, 0.16);
+  color: #ff4d63;
 }
 
 .mode-card.concept .feature-tag {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.16);
+  color: #60a5fa;
 }
 
 .mode-action {
@@ -172,13 +224,18 @@ defineEmits<{
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-sub);
-  transition: color 0.2s;
+  transition: all var(--transition-fast);
+  margin-top: auto;
 }
 
-.mode-card:hover .mode-action {
-  color: var(--primary);
+.mode-action svg {
+  transition: transform var(--transition-fast);
+}
+
+.mode-card:hover .mode-action svg {
+  transform: translateX(4px);
 }
 
 .mode-card.redbook:hover .mode-action {

@@ -21,10 +21,10 @@
         <div class="card-header">
           <div>
             <h2 class="section-title">访问安全</h2>
-            <p class="section-desc">配置前端访问令牌（仅保存在当前浏览器）</p>
+            <p class="section-desc">配置前端访问令牌（仅保存在当前浏览器本地会话）</p>
           </div>
           <button
-            class="btn btn-small"
+            class="btn btn-secondary btn-small"
             @click="refreshAuthStatus"
             :disabled="authChecking"
           >
@@ -58,20 +58,20 @@
             v-model="accessTokenInput"
             class="token-input"
             :type="showToken ? 'text' : 'password'"
-            placeholder="输入 MOTIFLAB_AUTH_TOKEN"
+            placeholder="输入访问令牌（如 REDINK_AUTH_TOKEN 或 MOTIFLAB_AUTH_TOKEN）"
             autocomplete="off"
             spellcheck="false"
           />
           <button
-            class="btn btn-small"
+            class="btn btn-secondary btn-small"
             @click="showToken = !showToken"
           >
             {{ showToken ? "隐藏" : "显示" }}
           </button>
         </div>
         <p class="security-hint">
-          说明：这里不会修改服务端环境变量，只是设置浏览器请求头里的
-          `Authorization: Bearer ...`。
+          说明：此处设置会保存在当前浏览器中，并在请求时自动注入
+          `Authorization: Bearer ...` 请求头。
         </p>
 
         <div class="token-actions">
@@ -83,7 +83,7 @@
             保存并验证
           </button>
           <button
-            class="btn"
+            class="btn btn-secondary"
             @click="clearAccessTokenSetting"
             :disabled="authChecking"
           >
@@ -107,7 +107,7 @@
             <p class="section-desc">用于生成小红书图文大纲</p>
           </div>
           <button
-            class="btn btn-small"
+            class="btn btn-secondary btn-small"
             @click="openAddTextModal"
           >
             <svg
@@ -131,7 +131,7 @@
                 y2="12"
               ></line>
             </svg>
-            添加
+            添加服务商
           </button>
         </div>
 
@@ -150,10 +150,10 @@
         <div class="card-header">
           <div>
             <h2 class="section-title">图片生成配置</h2>
-            <p class="section-desc">用于生成小红书配图</p>
+            <p class="section-desc">用于生成小红书配图与封面</p>
           </div>
           <button
-            class="btn btn-small"
+            class="btn btn-secondary btn-small"
             @click="openAddImageModal"
           >
             <svg
@@ -177,7 +177,7 @@
                 y2="12"
               ></line>
             </svg>
-            添加
+            添加服务商
           </button>
         </div>
 

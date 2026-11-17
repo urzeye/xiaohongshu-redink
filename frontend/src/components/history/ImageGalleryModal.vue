@@ -103,7 +103,7 @@
 
         <div class="header-actions">
           <button
-            class="btn download-btn"
+            class="btn btn-primary download-btn"
             @click="$emit('downloadAll')"
           >
             <svg
@@ -206,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { NImage, NImageGroup } from "naive-ui";
 import { appendUrlParams, getImageUrl as buildImageUrl } from "../../api";
 
@@ -248,7 +248,7 @@ const props = defineProps<{
 }>();
 
 // 定义 Emits
-defineEmits<{
+const emit = defineEmits<{
   (e: "close"): void;
   (e: "showOutline"): void;
   (e: "showContent"): void;
@@ -261,6 +261,20 @@ defineEmits<{
 const titleExpanded = ref(false);
 // 记录加载失败的缩略图，失败后回退原图
 const failedThumbs = ref(new Set<string>());
+
+function handleEsc(e: KeyboardEvent) {
+  if (e.key === "Escape" && props.visible) {
+    emit("close");
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", handleEsc);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleEsc);
+});
 
 function getImageUrl(filename: string, taskId: string) {
   const baseUrl = buildImageUrl(
@@ -294,7 +308,9 @@ const formattedDate = computed(() => {
 .modal-fullscreen {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 999;
   display: flex;
   align-items: center;
