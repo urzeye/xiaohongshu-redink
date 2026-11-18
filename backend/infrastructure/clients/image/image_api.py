@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional, List, Union
 from .base import BaseImageClient
 from backend.utils.image_compressor import compress_image
 from backend.utils.url_helper import resolve_api_url
+from backend.utils.image_size_helper import resolve_image_dimensions, is_volcano_ark
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class ImageApiGenerator(BaseImageClient):
         self.base_url = (config.get('base_url') or 'https://api.example.com').strip().rstrip('/')
         self.model = config.get('model', 'default-model')
         self.default_aspect_ratio = config.get('default_aspect_ratio', '3:4')
-        self.image_size = config.get('image_size', '4K')
+        self.image_size = config.get('image_size') or ('2K' if is_volcano_ark(self.base_url) else '4K')
 
         # 支持自定义端点路径
         endpoint_type = config.get('endpoint_type', '/v1/images/generations')
@@ -107,12 +108,20 @@ class ImageApiGenerator(BaseImageClient):
             "Content-Type": "application/json"
         }
 
+        resolved_dim = resolve_image_dimensions(
+            aspect_ratio=aspect_ratio,
+            tier=self.image_size,
+            base_url=self.base_url,
+            model=model,
+        )
+
         payload = {
             "model": model,
             "prompt": prompt,
             "response_format": "b64_json",
             "aspect_ratio": aspect_ratio,
-            "image_size": self.image_size
+            "image_size": self.image_size,
+            "size": resolved_dim,
         }
 
         # 收集所有参考图片

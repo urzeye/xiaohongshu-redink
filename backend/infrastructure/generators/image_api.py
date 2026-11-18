@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, List, Union
 from .base import ImageGeneratorBase
 from backend.utils.image_compressor import compress_image
 from backend.utils.url_helper import resolve_api_url
+from backend.utils.image_size_helper import resolve_image_dimensions, is_volcano_ark
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +36,12 @@ class ImageApiGenerator(ImageGeneratorBase):
         self.text_model = config.get('text_model')
         self.edit_model = config.get('edit_model')
         self.default_aspect_ratio = config.get('default_aspect_ratio', '3:4')
-        self.image_size = config.get('image_size', '4K')
+        self.image_size = config.get('image_size') or ('2K' if is_volcano_ark(self.base_url) else '4K')
         # 默认保持历史行为：直接发送尺寸标签（如 4K）。
         # 关闭后将常见标签转换为标准分辨率字符串。
         self.use_size_tag = config.get('use_size_tag', True)
-        # 添加对 SiliconFlow API 的 size 参数支持
-        self.size = config.get('size', '1024x1024')  # SiliconFlow API 需要的尺寸格式
+        # 支持显式配置的 size 参数（未配置时根据 aspect_ratio 动态解析）
+        self.size = config.get('size')
 
         # 支持自定义端点路径
         endpoint_type = config.get('endpoint_type', '/v1/images/generations')
@@ -143,24 +144,25 @@ class ImageApiGenerator(ImageGeneratorBase):
             if model_lower in alias_map:
                 selected_model = alias_map[model_lower]
 
-        if self.use_size_tag:
+        resolved_dim = resolve_image_dimensions(
+            aspect_ratio=aspect_ratio,
+            tier=self.image_size,
+            base_url=self.base_url,
+            model=selected_model,
+            explicit_size=self.size,
+        )
+
+        if self.use_size_tag and not is_volcano_ark(self.base_url):
             final_image_size = self.image_size
         else:
-            # 常见标签回退到标准分辨率，兼容严格校验 size 的 OpenAI 兼容接口
-            size_mapping = {
-                "1K": "1024x1024",
-                "2K": "1024x1024",
-                "4K": "1024x1024",
-                "HD": "1024x1024",
-            }
-            final_image_size = size_mapping.get(self.image_size, self.image_size)
+            final_image_size = resolved_dim
 
         payload = {
             "model": selected_model,
             "prompt": prompt,
             "aspect_ratio": aspect_ratio,
             "image_size": final_image_size,
-            "size": self.size  # SiliconFlow API 需要的 size 参数
+            "size": resolved_dim,
         }
 
         # 收集所有参考图片

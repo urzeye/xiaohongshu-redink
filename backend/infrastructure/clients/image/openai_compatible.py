@@ -5,6 +5,7 @@ from typing import Dict, Any
 import requests
 from .base import BaseImageClient
 from backend.utils.url_helper import resolve_api_url
+from backend.utils.image_size_helper import resolve_image_dimensions
 
 logger = logging.getLogger(__name__)
 
@@ -67,13 +68,23 @@ class OpenAICompatibleGenerator(BaseImageClient):
             size: 图片尺寸 (如 "1024x1024", "2048x2048", "4096x4096")
             model: 模型名称
             quality: 质量 ("standard" 或 "hd")
-            **kwargs: 其他参数
+            **kwargs: 其他参数 (可包含 aspect_ratio)
 
         Returns:
             图片二进制数据
         """
         if model is None:
             model = self.default_model
+
+        aspect_ratio = kwargs.get("aspect_ratio")
+        if aspect_ratio:
+            resolved_size = resolve_image_dimensions(
+                aspect_ratio=aspect_ratio,
+                base_url=self.base_url,
+                model=model,
+                explicit_size=size if size != "1024x1024" else None,
+            )
+            size = resolved_size
 
         logger.info(f"OpenAI 兼容 API 生成图片: model={model}, size={size}, endpoint={self.endpoint_type}")
 

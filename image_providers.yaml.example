@@ -88,7 +88,8 @@ providers:
   #   model: ep-xxxxxx-xxxx  # 火山方舟推理接入点 Endpoint ID
   #   endpoint_type: /images/generations
   #   default_aspect_ratio: "3:4"
-  #   image_size: 2400x1600  # 火山引擎要求总像素 >= 3686400 或指定 2K/4K
+  #   # 火山方舟（Seedream 4.0/5.0）2K 标准分辨率：3:4 建议为 1728x2304，总像素 >= 3686400
+  #   image_size: 2K
   #   use_size_tag: false
   #   high_concurrency: false
   #   short_prompt: false

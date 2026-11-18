@@ -230,6 +230,7 @@ class GenerateImageSkill(BaseSkill):
                 # OpenAI 兼容模式
                 image_data = self.client.generate_image(
                     prompt=prompt,
+                    aspect_ratio=self.provider_config.get('default_aspect_ratio', '3:4'),
                     size=self.provider_config.get('default_size', '1024x1024'),
                     model=self.provider_config.get('model'),
                     quality=self.provider_config.get('quality', 'standard'),

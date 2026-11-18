@@ -346,6 +346,7 @@ class ImageService:
                 logger.debug(f"  使用 OpenAI 兼容生成器")
                 image_data = self.generator.generate_image(
                     prompt=prompt,
+                    aspect_ratio=self.provider_config.get('default_aspect_ratio', '3:4'),
                     size=self.provider_config.get('default_size', '1024x1024'),
                     model=self.provider_config.get('model'),
                     quality=self.provider_config.get('quality', 'standard'),
