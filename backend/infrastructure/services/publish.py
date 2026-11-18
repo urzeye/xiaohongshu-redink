@@ -280,9 +280,8 @@ class PublishService:
                     "message": "未登录，请先登录小红书",
                 }
 
-            cookie_names = {c.get("name") for c in cookies if isinstance(c, dict)}
-            has_main_session = bool("web_session" in cookie_names or "a1" in cookie_names)
-            has_creator_session = bool("galaxy_creator_session_id" in cookie_names)
+            cookie_map = {c.get("name"): c.get("value") for c in cookies if isinstance(c, dict) and c.get("name")}
+            has_main_session = bool("web_session" in cookie_map or "a1" in cookie_map)
 
             if not has_main_session:
                 return {
@@ -293,21 +292,32 @@ class PublishService:
                     "message": "未登录，请先登录小红书",
                 }
 
-            if not has_creator_session:
-                return {
-                    "has_file": True,
-                    "logged_in": True,
-                    "creator_authorized": False,
-                    "username": None,
-                    "message": "小红书主站已登录，但创作者中心未授权（无法发布）",
+            # 探测创作者中心会话有效性（小红书顶级域名 Cookie 全域共享，优先请求创作者轻量接口验证）
+            creator_username = None
+            try:
+                import requests
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
                 }
+                resp = requests.get(
+                    "https://creator.xiaohongshu.com/api/galaxy/creator/home/personal_info",
+                    cookies=cookie_map,
+                    headers=headers,
+                    timeout=3
+                )
+                if resp.status_code == 200:
+                    res_data = resp.json()
+                    if res_data.get("success") and res_data.get("code") == 0:
+                        creator_username = res_data.get("data", {}).get("name")
+            except Exception as e:
+                logger.debug(f"探测创作者个人信息失败或离线: {e}")
 
             return {
                 "has_file": True,
                 "logged_in": True,
                 "creator_authorized": True,
-                "username": None,
-                "message": "小红书及创作者中心已就绪",
+                "username": creator_username,
+                "message": f"小红书及创作者中心已就绪（{creator_username}）" if creator_username else "小红书及创作者中心已就绪",
             }
         except Exception as e:
             logger.warning(f"读取本地 cookies.json 失败: {e}")
@@ -376,39 +386,18 @@ class PublishService:
         """
         creator_url = "https://creator.xiaohongshu.com/login"
         try:
-            login_exe = self.project_root / "tools" / "xiaohongshu-mcp" / "xiaohongshu-login.exe"
-            if os.name != "nt":
-                login_exe = self.project_root / "tools" / "xiaohongshu-mcp" / "xiaohongshu-login"
-
-            if login_exe.exists():
-                logger.info(f"启动独立登录工具: {login_exe}")
-                subprocess.Popen(
-                    [str(login_exe)],
-                    cwd=str(self.project_root),
-                )
-                return {
-                    "success": True,
-                    "message": "已打开小红书登录窗口，请在窗口中登录创作者中心，完成后点击刷新状态",
-                }
-            else:
-                webbrowser.open(creator_url)
-                return {
-                    "success": True,
-                    "message": "已在系统默认浏览器中打开小红书创作者平台，请登录后点击刷新状态",
-                }
+            logger.info(f"在系统浏览器中打开小红书创作者平台: {creator_url}")
+            opened = webbrowser.open(creator_url)
+            return {
+                "success": True,
+                "message": "已在浏览器中打开小红书创作者服务平台，登录或授权后点击【刷新状态】",
+            }
         except Exception as e:
             logger.error(f"打开创作者中心登录失败: {e}")
-            try:
-                webbrowser.open(creator_url)
-                return {
-                    "success": True,
-                    "message": "已在浏览器中打开小红书创作者平台，请登录后点击刷新",
-                }
-            except Exception:
-                return {
-                    "success": False,
-                    "error": f"无法打开创作者登录页: {str(e)}",
-                }
+            return {
+                "success": False,
+                "error": f"无法打开创作者登录页: {str(e)}",
+            }
 
     async def open_login_page(self) -> Dict[str, Any]:
         """
@@ -465,14 +454,14 @@ class PublishService:
                 "error": f"图片文件不存在或路径无效: {details}",
             }
 
-        # 前置校验创作者中心登录态，避免无效等待16秒报错
+        # 前置校验登录态，避免未登录时盲目调用发布报错
         local_status = self._get_local_cookies_status()
-        if not local_status.get("creator_authorized"):
-            logger.warning("发布被拦截：创作者中心未授权或缺少 galaxy_creator_session_id")
+        if not local_status.get("creator_authorized") and not local_status.get("logged_in"):
+            logger.warning("发布被拦截：未登录小红书")
             return {
                 "success": False,
-                "message": "创作者中心登录失效或未授权，请点击【授权创作者中心】完成登录后再发布",
-                "error": "创作者中心登录失效或未授权，请点击【授权创作者中心】完成登录后再发布",
+                "message": "小红书登录已失效，请先完成登录后再发布",
+                "error": "小红书登录已失效，请先完成登录后再发布",
             }
 
         logger.info(f"开始发布到小红书: title={title}, images={len(images)}")

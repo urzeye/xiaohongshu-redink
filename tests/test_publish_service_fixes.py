@@ -16,7 +16,7 @@ def test_get_local_cookies_status_missing(tmp_path):
     assert status["creator_authorized"] is False
 
 
-def test_get_local_cookies_status_main_only(tmp_path):
+def test_get_local_cookies_status_main_authorized(tmp_path):
     svc = PublishService(gateway=MagicMock())
     svc.project_root = tmp_path
     cookies_path = tmp_path / "cookies.json"
@@ -34,8 +34,8 @@ def test_get_local_cookies_status_main_only(tmp_path):
     status = svc._get_local_cookies_status()
     assert status["has_file"] is True
     assert status["logged_in"] is True
-    assert status["creator_authorized"] is False
-    assert "创作者中心未授权" in status["message"]
+    assert status["creator_authorized"] is True
+    assert "就绪" in status["message"]
 
 
 def test_get_local_cookies_status_full_authorized(tmp_path):
@@ -60,7 +60,7 @@ def test_get_local_cookies_status_full_authorized(tmp_path):
     assert "就绪" in status["message"]
 
 
-def test_publish_intercepts_when_creator_unauthorized(tmp_path):
+def test_publish_intercepts_when_not_logged_in(tmp_path):
     svc = PublishService(gateway=MagicMock())
     svc.project_root = tmp_path
     # 模拟图片存在
@@ -74,8 +74,8 @@ def test_publish_intercepts_when_creator_unauthorized(tmp_path):
     ))
 
     assert result["success"] is False
-    assert "创作者中心登录失效或未授权" in result["error"]
-    assert "创作者中心登录失效或未授权" in result["message"]
+    assert "未登录" in result["error"] or "失效" in result["error"]
+    assert "未登录" in result["message"] or "失效" in result["message"]
 
 
 def test_start_service_delegates_to_gateway():
