@@ -1,6 +1,34 @@
 import axios from 'axios'
 
-const API_BASE_URL = '/api'
+export function isTauriEnvironment(): boolean {
+  if (typeof window === 'undefined') return false
+  return Boolean(
+    (window as any).__TAURI_INTERNALS__ ||
+    (window as any).__TAURI__ ||
+    window.location.protocol === 'tauri:' ||
+    window.location.hostname === 'tauri.localhost'
+  )
+}
+
+export function getApiBaseUrl(): string {
+  const envBase = (import.meta as any).env?.VITE_API_BASE_URL
+  if (envBase) return String(envBase).replace(/\/+$/, '')
+  if (isTauriEnvironment()) {
+    return 'http://127.0.0.1:12398/api'
+  }
+  return '/api'
+}
+
+export function getBackendBaseUrl(): string {
+  const envBase = (import.meta as any).env?.VITE_BACKEND_URL
+  if (envBase) return String(envBase).replace(/\/+$/, '')
+  if (isTauriEnvironment()) {
+    return 'http://127.0.0.1:12398'
+  }
+  return ''
+}
+
+export const API_BASE_URL = getApiBaseUrl()
 const ACCESS_TOKEN_KEY = 'redink_access_token'
 
 let accessToken = localStorage.getItem(ACCESS_TOKEN_KEY) || ''

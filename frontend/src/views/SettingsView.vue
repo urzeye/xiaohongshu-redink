@@ -17,6 +17,75 @@
       v-else
       class="settings-container"
     >
+      <!-- 桌面客户端与本地引擎控制卡片 (在桌面端或本地模式下展示) -->
+      <div v-if="isTauri || desktopStatus" class="card desktop-status-card">
+        <div class="card-header">
+          <div>
+            <h2 class="section-title">桌面客户端与本地引擎</h2>
+            <p class="section-desc">
+              运行于家庭宽带环境（{{ platformInfo ? `${platformInfo.os} · ${platformInfo.arch}` : '本地桌面模式' }}），提供专属小红书安全防风控网络
+            </p>
+          </div>
+          <button
+            class="btn btn-secondary btn-small"
+            @click="refreshDesktopStatus"
+            :disabled="desktopChecking"
+          >
+            {{ desktopChecking ? "检测中..." : "刷新状态" }}
+          </button>
+        </div>
+
+        <div class="security-status">
+          <span
+            class="status-pill"
+            :class="desktopStatus?.is_running ? 'optional' : 'required'"
+          >
+            引擎状态：{{ desktopStatus?.is_running ? "🟢 正常运行中" : "🔴 离线/未启动" }}
+          </span>
+          <span v-if="desktopStatus?.port" class="status-pill optional">
+            监听端口：{{ desktopStatus.port }}
+          </span>
+          <span v-if="desktopStatus?.pid" class="status-pill optional">
+            PID：{{ desktopStatus.pid }}
+          </span>
+        </div>
+
+        <p class="security-hint">
+          {{ desktopStatus?.message || "本地后端与小红书自动化发布网关正在后台受控运行。" }}
+        </p>
+
+        <div class="token-actions" style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button
+            class="btn btn-secondary"
+            @click="handleOpenDataFolder"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            打开数据目录 (data/)
+          </button>
+          <button
+            class="btn btn-secondary"
+            @click="handleOpenLogsFolder"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            打开运行日志 (logs/)
+          </button>
+          <button
+            class="btn btn-primary"
+            @click="handleRestartBackend"
+            :disabled="desktopRestarting"
+          >
+            {{ desktopRestarting ? "正在重启..." : "重启本地引擎" }}
+          </button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div>
@@ -458,6 +527,52 @@ import {
   imageTypeOptions,
   searchTypeOptions,
 } from "../composables/useProviderForm";
+import {
+  isTauriEnvironment,
+  getBackendStatus,
+  restartBackend,
+  openDataFolder,
+  openLogsFolder,
+  getPlatformInfo,
+  type BackendStatus,
+  type PlatformInfo,
+} from "../utils/tauri";
+
+const isTauri = ref(isTauriEnvironment());
+const desktopStatus = ref<BackendStatus | null>(null);
+const platformInfo = ref<PlatformInfo | null>(null);
+const desktopChecking = ref(false);
+const desktopRestarting = ref(false);
+
+async function refreshDesktopStatus() {
+  if (!isTauri.value) return;
+  desktopChecking.value = true;
+  try {
+    desktopStatus.value = await getBackendStatus();
+    platformInfo.value = await getPlatformInfo();
+  } finally {
+    desktopChecking.value = false;
+  }
+}
+
+async function handleOpenDataFolder() {
+  await openDataFolder();
+}
+
+async function handleOpenLogsFolder() {
+  await openLogsFolder();
+}
+
+async function handleRestartBackend() {
+  desktopRestarting.value = true;
+  try {
+    desktopStatus.value = await restartBackend();
+  } catch (e: any) {
+    alert("重启后端失败: " + (e?.message || e));
+  } finally {
+    desktopRestarting.value = false;
+  }
+}
 
 const accessTokenInput = ref(getAccessToken());
 const showToken = ref(false);
@@ -753,7 +868,7 @@ async function changeSearchTimeoutSeconds(delta: number) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadConfig(), refreshAuthStatus()]);
+  await Promise.all([loadConfig(), refreshAuthStatus(), refreshDesktopStatus()]);
   accessTokenInput.value = getAccessToken();
 });
 </script>

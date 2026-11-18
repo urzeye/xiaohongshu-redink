@@ -100,7 +100,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { getImageUrl } from "../../api";
+import { getImageUrl, getBackendBaseUrl } from "../../api";
 
 /**
  * 历史记录卡片组件
@@ -158,7 +158,7 @@ const thumbnailUrl = computed(() => {
 
   if (props.record.recordType === "concept") {
     // 概念可视化图片路径
-    return `/output/concepts/${props.record.task_id}/${props.record.thumbnail}`;
+    return `${getBackendBaseUrl()}/output/concepts/${props.record.task_id}/${props.record.thumbnail}`;
   }
   // 小红书图文路径
   return getImageUrl(props.record.task_id, props.record.thumbnail);

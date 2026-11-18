@@ -1,0 +1,25 @@
+[package]
+name = "redink"
+version = "0.3.5"
+description = "RedInk AI - 小红书爆款图文创作与发布工具"
+authors = ["RedInk Team"]
+license = "CC-BY-NC-SA-4.0"
+repository = "https://github.com/urzeye/xiaohongshu-redink"
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "redink_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.5", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.12.6", features = ["tray-icon"] }
+tauri-plugin-log = "2"
+tauri-plugin-shell = "2"
+ureq = { version = "2.10", default-features = false }

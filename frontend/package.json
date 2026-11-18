@@ -11,6 +11,7 @@
     "quality": "npm run type-check && npm run build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.5",
     "axios": "^1.6.0",
     "naive-ui": "^2.43.2",
     "pinia": "^2.1.0",

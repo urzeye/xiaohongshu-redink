@@ -47,7 +47,11 @@ def _configure_cors(app: Flask, settings: AppSettings, logger: logging.Logger) -
                 "origins": settings.cors_origins,
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization", "X-Request-ID"],
-            }
+            },
+            r"/output/*": {
+                "origins": settings.cors_origins,
+                "methods": ["GET", "OPTIONS"],
+            },
         },
     )
 

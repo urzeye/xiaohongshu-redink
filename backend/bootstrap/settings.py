@@ -116,7 +116,14 @@ class AppSettings:
             os.getenv("REDINK_ROOT") or Path(__file__).resolve().parents[2]
         )
         default_app_name, default_app_version = _read_project_metadata(project_root)
-        default_cors = ["http://localhost:5173", "http://localhost:3000"]
+        default_cors = [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:12398",
+            "tauri://localhost",
+            "http://tauri.localhost",
+            "https://tauri.localhost",
+        ]
 
         debug = _to_bool(os.getenv("REDINK_DEBUG"), default=True)
         log_level = (os.getenv("REDINK_LOG_LEVEL") or ("DEBUG" if debug else "INFO")).upper()
