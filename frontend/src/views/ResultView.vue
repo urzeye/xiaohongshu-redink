@@ -21,6 +21,28 @@
       </div>
       <div class="header-actions" style="display: flex; gap: 12px">
         <button class="btn btn-secondary" @click="startOver">再来一篇</button>
+        <button
+          v-if="failedCount > 0 && !isGenerating"
+          class="btn btn-secondary"
+          @click="retryAllFailed"
+          :disabled="isRetryingAll"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          {{ isRetryingAll ? "重试中..." : `重试全部失败页 (${failedCount})` }}
+        </button>
         <button class="btn btn-secondary" @click="downloadAll" :disabled="isGenerating">
           <svg
             width="16"
@@ -79,9 +101,19 @@
           :style="{ width: `${progressPercent}%` }"
         ></div>
       </div>
-      <p v-if="errorText" class="error-text">
-        {{ errorText }}
-      </p>
+      <div v-if="errorText" style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; flex-wrap: wrap; gap: 8px;">
+        <p class="error-text" style="margin: 0;">
+          {{ errorText }}
+        </p>
+        <button
+          v-if="store.imageJobId && !pollingActive"
+          class="btn btn-secondary"
+          style="padding: 4px 12px; font-size: 13px"
+          @click="resumePolling"
+        >
+          继续监听进度
+        </button>
+      </div>
     </div>
 
     <div class="card" style="padding: 32px">
@@ -171,8 +203,17 @@
             <div
               v-else-if="image.status === 'error'"
               class="placeholder-state error-state"
+              style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
             >
-              <span>生成失败</span>
+              <span style="font-size: 13px; color: var(--color-error)">生成失败</span>
+              <button
+                class="btn btn-secondary"
+                style="padding: 4px 12px; font-size: 12px; border-radius: 6px"
+                @click.stop="handleRegenerate(image)"
+                :disabled="regeneratingIndex === image.index || isGenerating"
+              >
+                {{ regeneratingIndex === image.index ? "重试中..." : "重试此页" }}
+              </button>
             </div>
             <div v-else class="placeholder-state">
               <span>等待中</span>
@@ -599,11 +640,17 @@ const store = useGeneratorStore();
 const message = useMessage();
 
 const regeneratingIndex = ref<number | null>(null);
+const isRetryingAll = ref(false);
 const errorText = ref("");
 const pollingActive = ref(false);
 const previewVisible = ref(false);
 const previewImageUrl = ref("");
 let stopPolling = false;
+
+const resumePolling = async () => {
+  stopPolling = false;
+  await startPollingIfNeeded();
+};
 
 const doneCount = computed(
   () => store.images.filter((img) => img.status === "done" && !!img.url).length,
@@ -787,8 +834,12 @@ async function syncImageStateToHistory(taskId: string) {
 }
 
 const handleRegenerate = async (image: any) => {
-  if (!store.taskId || regeneratingIndex.value !== null || isGenerating.value)
-    return;
+  if (regeneratingIndex.value !== null || isGenerating.value) return;
+
+  // 若缺失 taskId，自动分配一个以支持单页重绘落盘
+  if (!store.taskId) {
+    store.taskId = `task_${Date.now()}`;
+  }
 
   regeneratingIndex.value = image.index;
   try {
@@ -815,6 +866,7 @@ const handleRegenerate = async (image: any) => {
     );
     if (result.success && result.image_url) {
       store.updateImage(image.index, result.image_url);
+      message.success(`第 ${image.index + 1} 页重绘成功`);
       await syncImageStateToHistory(store.taskId);
     } else {
       message.error("重绘失败: " + (result.error || "未知错误"));
@@ -823,6 +875,22 @@ const handleRegenerate = async (image: any) => {
     message.error("重绘失败: " + e.message);
   } finally {
     regeneratingIndex.value = null;
+  }
+};
+
+const retryAllFailed = async () => {
+  if (isRetryingAll.value || isGenerating.value) return;
+  const failedImgs = store.images.filter((img) => img.status === "error");
+  if (failedImgs.length === 0) return;
+
+  isRetryingAll.value = true;
+  message.info(`开始重试 ${failedImgs.length} 张失败图片...`);
+  try {
+    for (const img of failedImgs) {
+      await handleRegenerate(img);
+    }
+  } finally {
+    isRetryingAll.value = false;
   }
 };
 
@@ -861,27 +929,44 @@ async function hydrateFromHistoryRecord(recordId: string) {
     store.clearContent();
   }
 
-  const taskId = record.images?.task_id || null;
+  let taskId = record.images?.task_id || null;
   const generated = Array.isArray(record.images?.generated)
     ? record.images.generated
     : [];
+
+  // 兜底推导任务ID：若历史记录中无显式 task_id 但有缩略图路径
+  if (!taskId && record.thumbnail && String(record.thumbnail).includes("/")) {
+    const parts = String(record.thumbnail).split("/");
+    taskId = parts[parts.length - 2] || null;
+  }
   store.taskId = taskId;
 
-  if (taskId) {
-    store.images = record.outline.pages.map((_, idx) => {
-      const filename = generated[idx];
+  const totalPages = Array.isArray(record.outline?.pages) ? record.outline.pages.length : 0;
+  // 为所有页面恢复卡片状态，绝不置空
+  store.images = (record.outline?.pages || []).map((_, idx) => {
+    const filename = generated[idx];
+    if (taskId && filename) {
       return {
         index: idx,
-        url: filename ? getImageUrl(taskId, filename) : "",
-        status: filename ? "done" : "error",
-        retryable: !filename,
+        url: getImageUrl(taskId, filename),
+        status: "done" as const,
+        retryable: false,
       };
-    });
-    store.finishGeneration(taskId);
-  } else {
-    store.images = [];
-    store.stage = "result";
-  }
+    }
+    return {
+      index: idx,
+      url: "",
+      status: "error" as const,
+      retryable: true,
+      error: "图片未生成或已失效",
+    };
+  });
+
+  const completedCount = store.images.filter((img) => img.status === "done" && !!img.url).length;
+  store.progress.current = completedCount;
+  store.progress.total = totalPages;
+  store.progress.status = completedCount >= totalPages && totalPages > 0 ? "done" : "error";
+  store.stage = "result";
 }
 
 function sleep(ms: number) {
@@ -901,13 +986,19 @@ async function pollImageJobUntilFinished(jobId: string): Promise<{
     const result = await getImageJob(jobId);
     if (!result.success || !result.data) {
       consecutiveErrors += 1;
-      if (consecutiveErrors >= 5) {
-        throw new Error(result.error || "轮询图片任务失败");
+      // 容错提升至 30 次（约 1-2 分钟重试缓冲），防止生图高负荷时瞬发断联中断任务
+      if (consecutiveErrors >= 30) {
+        throw new Error(result.error || "轮询图片任务失败：网络持续无响应");
       }
-      await sleep(1200);
+      const backoff = Math.min(3000, 1200 + consecutiveErrors * 200);
+      errorText.value = `同步进度中，正在自动重连 (${consecutiveErrors}/30)...`;
+      await sleep(backoff);
       continue;
     }
 
+    if (consecutiveErrors > 0) {
+      errorText.value = "";
+    }
     consecutiveErrors = 0;
     const job = result.data;
     const items = Array.isArray(job.items) ? job.items : [];
@@ -923,6 +1014,8 @@ async function pollImageJobUntilFinished(jobId: string): Promise<{
         seenSuccess.add(index);
         seenFailed.delete(index);
         store.updateProgress(index, "done", item.image_url);
+        // ★★★ 增量同步：每生成完成一张，即刻落库保存，永不丢失！★★★
+        void syncImageStateToHistory(finalTaskId);
       } else if (
         item.status === "failed" &&
         !seenFailed.has(index) &&
@@ -935,6 +1028,7 @@ async function pollImageJobUntilFinished(jobId: string): Promise<{
           undefined,
           item.error || "生成失败",
         );
+        void syncImageStateToHistory(finalTaskId);
       }
     }
 
@@ -973,20 +1067,20 @@ async function startPollingIfNeeded() {
   try {
     const finished = await pollImageJobUntilFinished(store.imageJobId);
     if (finished.status === "cancelled") {
-      errorText.value = "图片任务已取消";
-      store.progress.status = "error";
+      // 用户离开页面时中断局部轮询，不把任务标记为 error，以便切回时恢复
       return;
     }
     await syncImageStateToHistory(finished.taskId);
   } catch (err: any) {
-    errorText.value = "图片轮询失败: " + (err?.message || String(err));
-    store.progress.status = "error";
+    errorText.value = "图片轮询受阻: " + (err?.message || String(err));
+    // 保持进度状态为可恢复
   } finally {
     pollingActive.value = false;
   }
 }
 
 onMounted(async () => {
+  stopPolling = false;
   const recordId = resolveRouteRecordId();
   if (recordId) {
     await hydrateFromHistoryRecord(recordId);
@@ -998,7 +1092,10 @@ onMounted(async () => {
     return;
   }
 
-  await startPollingIfNeeded();
+  // 页面加载或从其他菜单切回时，若任务仍在生成中，自动恢复轮询
+  if (store.imageJobId && (store.progress.status === "generating" || store.progress.status === "idle")) {
+    await startPollingIfNeeded();
+  }
 });
 
 onMounted(() => {

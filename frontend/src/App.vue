@@ -107,10 +107,11 @@
               </svg>
               <span class="nav-text">首页</span>
             </RouterLink>
-            <RouterLink
-              to="/redbook"
+            <a
+              href="/redbook"
               class="nav-item"
-              active-class="active"
+              :class="{ active: route.path.startsWith('/redbook') }"
+              @click="navigateRedbook"
             >
               <svg
                 width="20"
@@ -138,7 +139,7 @@
                 <polyline points="21 15 16 10 5 21"></polyline>
               </svg>
               <span class="nav-text">小红书图文</span>
-            </RouterLink>
+            </a>
             <RouterLink
               to="/templates"
               class="nav-item"
@@ -644,7 +645,7 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView, RouterLink, useRoute } from "vue-router";
+import { RouterView, RouterLink, useRoute, useRouter } from "vue-router";
 import { ref, watch, onMounted } from "vue";
 import {
   NConfigProvider,
@@ -652,8 +653,31 @@ import {
   darkTheme,
   type GlobalThemeOverrides,
 } from "naive-ui";
-import { setupAutoSave } from "./stores/generator";
+import { setupAutoSave, useGeneratorStore } from "./stores/generator";
 import { useTheme } from "./composables/useTheme";
+
+const router = useRouter();
+const generatorStore = useGeneratorStore();
+
+function navigateRedbook(e: Event) {
+  e.preventDefault();
+  if (
+    generatorStore.stage === "generating" ||
+    (generatorStore.stage === "result" &&
+      (generatorStore.images.length > 0 ||
+        generatorStore.taskId ||
+        generatorStore.recordId))
+  ) {
+    router.push("/redbook/result");
+  } else if (
+    generatorStore.stage === "outline" &&
+    generatorStore.outline.pages.length > 0
+  ) {
+    router.push("/redbook/outline");
+  } else {
+    router.push("/redbook");
+  }
+}
 
 const themeOverrides: GlobalThemeOverrides = {
   common: {

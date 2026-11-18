@@ -756,13 +756,15 @@ export async function createImageJob(
   fullOutline: string,
   userImages?: File[],
   userTopic?: string,
-  promptContext?: ImagePromptContext
+  promptContext?: ImagePromptContext,
+  recordId?: string | null
 ): Promise<{ success: boolean; job_id?: string; status?: string; error?: string }> {
   try {
     const userImagesBase64 = await toBase64Images(userImages)
     const response = await axios.post(`${API_BASE_URL}/image-jobs`, {
       pages,
       task_id: taskId,
+      record_id: recordId || undefined,
       full_outline: fullOutline,
       user_images: userImagesBase64.length > 0 ? userImagesBase64 : undefined,
       user_topic: userTopic || '',
@@ -781,7 +783,7 @@ export async function getImageJob(jobId: string): Promise<{
   error?: string
 }> {
   try {
-    const response = await axios.get(`${API_BASE_URL}/image-jobs/${jobId}`)
+    const response = await axios.get(`${API_BASE_URL}/image-jobs/${jobId}`, { timeout: 15000 })
     return response.data
   } catch (error) {
     return handleAxiosError(error, '获取图片任务失败')

@@ -23,6 +23,7 @@ class _FakeImageJobService:
         user_topic: str = "",
         user_prompt: str = "",
         system_prompt: str = "",
+        record_id: str | None = None,
     ) -> str:
         self.created_payload = {
             "pages": pages,
@@ -32,6 +33,7 @@ class _FakeImageJobService:
             "user_topic": user_topic,
             "user_prompt": user_prompt,
             "system_prompt": system_prompt,
+            "record_id": record_id,
         }
         return "job_test_1"
 
@@ -75,6 +77,7 @@ def test_image_job_routes_happy_path(monkeypatch):
     payload = {
         "pages": [{"index": 0, "type": "cover", "content": "封面"}],
         "task_id": "task_1",
+        "record_id": "rec_123",
         "full_outline": "测试大纲",
         "user_topic": "测试主题",
         "user_prompt": "用户提示词",
@@ -87,6 +90,7 @@ def test_image_job_routes_happy_path(monkeypatch):
     assert create_data["success"] is True
     assert create_data["job_id"] == "job_test_1"
     assert fake_service.created_payload["user_prompt"] == "用户提示词"
+    assert fake_service.created_payload["record_id"] == "rec_123"
 
     get_resp = client.get("/api/image-jobs/job_test_1")
     assert get_resp.status_code == 200

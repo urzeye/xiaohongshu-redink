@@ -56,6 +56,7 @@ class ImageJobApplicationService:
         *,
         pages: List[Dict[str, Any]],
         task_id: Optional[str] = None,
+        record_id: Optional[str] = None,
         full_outline: str = "",
         user_images_base64: Optional[List[str]] = None,
         user_topic: str = "",
@@ -64,9 +65,11 @@ class ImageJobApplicationService:
     ) -> str:
         """创建异步任务并启动后台执行。"""
         normalized_task_id = (task_id or "").strip() if isinstance(task_id, str) or task_id is None else str(task_id).strip()
+        normalized_record_id = (record_id or "").strip() if isinstance(record_id, str) or record_id is None else str(record_id).strip()
         payload = {
             "pages": pages,
             "task_id": normalized_task_id or None,
+            "record_id": normalized_record_id or None,
             "full_outline": full_outline,
             "user_images": user_images_base64 or [],
             "user_topic": user_topic,
@@ -117,6 +120,9 @@ class ImageJobApplicationService:
         task_id = payload.get("task_id")
         if isinstance(task_id, str):
             task_id = task_id.strip() or None
+        record_id = payload.get("record_id")
+        if isinstance(record_id, str):
+            record_id = record_id.strip() or None
         full_outline = str(payload.get("full_outline") or "")
         user_topic = str(payload.get("user_topic") or "")
         user_prompt = str(payload.get("user_prompt") or "")
@@ -182,8 +188,25 @@ class ImageJobApplicationService:
                         )
                         self._repository.update_job(
                             job_id,
-                            {"completed_pages": completed_count, "failed_pages": failed_count},
+                            {"completed_pages": completed_count, "failed_pages": failed_count, "task_id": final_task_id},
                         )
+                        if record_id and final_task_id:
+                            try:
+                                from backend.application.services import get_history_application_service
+                                history_app_service = get_history_application_service()
+                                gen_list = [
+                                    generated_images.get(p_idx, "").split("/")[-1].split("?")[0]
+                                    for p_idx in range(len(pages))
+                                ]
+                                thumb_name = gen_list[0] if gen_list and gen_list[0] else None
+                                history_app_service.update_record(
+                                    record_id,
+                                    images={"task_id": final_task_id, "generated": gen_list},
+                                    status="completed" if completed_count >= len(pages) else "partial",
+                                    thumbnail=f"thumb_{thumb_name}" if thumb_name else None,
+                                )
+                            except Exception as sync_err:
+                                pass
                 elif event_type == "error":
                     idx = int(event_data.get("index", -1))
                     message = str(event_data.get("message") or "生成失败")

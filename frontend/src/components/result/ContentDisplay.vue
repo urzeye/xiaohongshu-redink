@@ -307,10 +307,11 @@
             v-for="(tag, index) in content.tags"
             :key="index"
             class="tag-item"
+            :title="`点击复制 #${String(tag).replace(/^#+/, '')}`"
             @click="copyTag(tag, index)"
             :class="{ copied: copiedTagIndex === index }"
           >
-            #{{ tag }}
+            #{{ String(tag).replace(/^#+/, "") }}
           </span>
         </div>
       </div>
@@ -344,8 +345,10 @@
 import { ref, computed, onMounted } from "vue";
 import { useGeneratorStore } from "../../stores/generator";
 import { generateContent, updateHistory } from "../../api";
+import { useMessage } from "naive-ui";
 
 const store = useGeneratorStore();
+const message = useMessage();
 
 onMounted(() => {
   if (store.content.status === "idle") {
@@ -505,10 +508,16 @@ async function copyFullContent() {
 }
 
 // 复制单个标签
-async function copyTag(tag: string, index: number) {
-  if (await copyToClipboard(`#${tag}`)) {
+async function copyTag(rawTag: string, index: number) {
+  const cleanTag = String(rawTag || "").trim().replace(/^#+/, "");
+  if (!cleanTag) return;
+  const tagText = `#${cleanTag}`;
+  if (await copyToClipboard(tagText)) {
     copiedTagIndex.value = index;
+    message.success(`已复制 ${tagText}`);
     setTimeout(() => (copiedTagIndex.value = null), 2000);
+  } else {
+    message.error("复制失败，请重试");
   }
 }
 </script>

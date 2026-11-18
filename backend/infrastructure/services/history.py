@@ -314,6 +314,43 @@ class HistoryService:
             return self._convert_supabase_record(record)
         return None
 
+    def _auto_recover_task_for_record(self, record: Dict) -> Optional[Dict[str, Any]]:
+        """在 task_id 缺失时尝试从本地 history 目录中匹配挽救已生成的任务图片"""
+        try:
+            pages = record.get("outline", {}).get("pages", [])
+            page_count = len(pages) if isinstance(pages, list) else 0
+            if page_count == 0:
+                return None
+
+            candidate_dirs = []
+            for entry in os.scandir(self.history_dir):
+                if entry.is_dir() and entry.name.startswith("task_"):
+                    if os.path.exists(os.path.join(entry.path, "0.png")):
+                        stat = entry.stat()
+                        candidate_dirs.append((entry.name, entry.path, stat.st_mtime))
+
+            if not candidate_dirs:
+                return None
+
+            candidate_dirs.sort(key=lambda x: x[2], reverse=True)
+            for task_id, task_path, _ in candidate_dirs:
+                generated = []
+                for idx in range(page_count):
+                    img_name = f"{idx}.png"
+                    if os.path.exists(os.path.join(task_path, img_name)):
+                        generated.append(img_name)
+                    else:
+                        generated.append("")
+                if any(bool(g) for g in generated):
+                    return {
+                        "task_id": task_id,
+                        "generated": generated
+                    }
+            return None
+        except Exception as e:
+            logger.warning(f"自动挽救历史任务图片失败: {e}")
+            return None
+
     def _get_record_local(self, record_id: str) -> Optional[Dict]:
         """本地模式：获取历史记录"""
         record_path = self._get_record_path(record_id)
@@ -326,6 +363,17 @@ class HistoryService:
                 record = json.load(f)
                 # 兼容旧记录：补齐 content 结构
                 record["content"] = _normalize_content(record.get("content"))
+
+                # 自动挽救缺失 task_id 的图片数据
+                images_info = record.get("images")
+                if not isinstance(images_info, dict) or not images_info.get("task_id"):
+                    recovered = self._auto_recover_task_for_record(record)
+                    if recovered:
+                        record["images"] = recovered
+                        if not record.get("thumbnail") and recovered.get("generated"):
+                            first_img = next((g for g in recovered["generated"] if g), None)
+                            if first_img:
+                                record["thumbnail"] = f"thumb_{first_img}"
                 return record
         except Exception:
             return None

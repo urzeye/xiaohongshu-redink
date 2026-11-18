@@ -55,6 +55,7 @@ def create_image_job_blueprint():
             job_id = image_job_app_service.create_job(
                 pages=pages,
                 task_id=data.get("task_id"),
+                record_id=data.get("record_id"),
                 full_outline=str(data.get("full_outline") or ""),
                 user_images_base64=data.get("user_images") if isinstance(data.get("user_images"), list) else [],
                 user_topic=str(data.get("user_topic") or ""),

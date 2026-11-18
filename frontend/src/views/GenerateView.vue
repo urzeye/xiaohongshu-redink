@@ -112,6 +112,7 @@ async function launch() {
         userPrompt: store.imagePrompt.userPrompt || "",
         systemPrompt: store.imagePrompt.systemPrompt || "",
       },
+      store.recordId,
     );
 
     if (!createResult.success || !createResult.job_id) {
