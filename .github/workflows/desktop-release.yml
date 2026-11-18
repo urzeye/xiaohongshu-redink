@@ -1,26 +1,26 @@
-name: Build Cross-Platform Desktop (Tauri)
+name: Build Desktop Installers
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-tauri:
+    timeout-minutes: 25
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - platform: "macos-latest"
-            target: "universal-apple-darwin"
-            args: "--target universal-apple-darwin"
+            rust-targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+            args: "--target universal-apple-darwin --bundles dmg"
+            artifact: macos
           - platform: "windows-latest"
-            target: "x86_64-pc-windows-msvc"
-            args: ""
+            rust-targets: "x86_64-pc-windows-msvc"
+            args: "--bundles nsis,msi"
+            artifact: windows
 
     runs-on: ${{ matrix.platform }}
 
@@ -41,7 +41,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          toolchain: "1.100.0"
+          targets: ${{ matrix.rust-targets }}
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
@@ -49,24 +50,26 @@ jobs:
           workspaces: "./src-tauri -> target"
 
       - name: Install Frontend Dependencies
+        shell: bash
         run: |
-          pnpm install
-          pnpm --dir frontend install
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --dir frontend install --frozen-lockfile
 
-      - name: Build Desktop Application (Tauri Action)
+      - name: Build Desktop Installers
         uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "RedInk Desktop ${{ github.ref_name }}"
-          releaseBody: |
-            ### 🖥️ RedInk 跨平台桌面客户端已发布！
-
-            为避免小红书账号风控，本桌面客户端运行于用户**本地家庭宽带环境**，无黑框、免配置 Docker / Node.js。
-
-            - **Windows 用户**: 下载 `.exe` 安装程序或压缩包解压直接运行
-            - **macOS 用户**: 下载 `.dmg` 文件拖入 Applications 即可使用（通用架构支持 M 系列芯片与 Intel）
-          releaseDraft: false
-          prerelease: false
           args: ${{ matrix.args }}
+          retryAttempts: 0
+
+      - name: Upload Desktop Installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.artifact }}
+          path: |
+            src-tauri/target/**/bundle/nsis/*.exe
+            src-tauri/target/**/bundle/msi/*.msi
+            src-tauri/target/**/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0

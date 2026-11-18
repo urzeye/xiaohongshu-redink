@@ -3,7 +3,7 @@
 ## 📌 背景与核心价值
 
 发布小红书图文最关键的痛点是**账号与 IP 风控**。数据中心 IP（阿里云、腾讯云等）在发帖时极易被风控系统识别为自动化脚本，导致滑块死锁、限流甚至封禁。
-因此，**在个人电脑（家庭住宅宽带）本地运行是目前最稳妥的零封禁方案**。
+因此，优先在个人电脑本地运行，便于用户管理登录态与浏览器会话；本地运行不能保证账号免受平台风控。
 
 然而，传统的开发模式（Dev 模式）需要开启多个黑框控制台、安装 Node.js/Python 依赖环境，对非技术创作者极不友好。**基于 Tauri 的跨平台桌面客户端方案**彻底解决了这一痛点：
 - 🪟 **全平台原生支持**：同时支持 Windows (x64) 与 macOS (Apple Silicon M系列及 Intel 架构)
@@ -69,11 +69,17 @@ pnpm desktop:build
 
 ## 📦 跨平台打包与发布 (CI/CD)
 
-项目已配置 GitHub Actions 自动化编译工作流：`.github/workflows/desktop-release.yml`。
+项目的唯一自动发布入口是 `.github/workflows/release.yml`，仅在推送版本 Tag 时运行。它调用 `.github/workflows/desktop-release.yml` 构建安装包；后者只有 `workflow_call` 入口，不会独立触发。
 
 ### 触发发布
-每次推送到版本 Tag（例如 `v0.3.5`）或在 GitHub Actions 页面手动点击 `workflow_dispatch` 时，将自动并行矩阵编译：
-1. **Windows Runner**: 生成 Windows NSIS 安装程序（`.exe`）与便携版；
-2. **macOS Runner**: 使用 `universal-apple-darwin` 目标生成通用二进制 `.dmg`，完美兼容 M1/M2/M3/M4 芯片与 Intel Mac。
+每次推送版本 Tag（例如 `v0.4.0`），只启动一次发布运行，包含以下构建：
+1. **Windows Runner**: 生成 NSIS（`.exe`）与 MSI（`.msi`）安装包。
+2. **macOS Runner**: 安装 `aarch64-apple-darwin` 和 `x86_64-apple-darwin` 两个 Rust 目标，再由 Tauri 使用 `--target universal-apple-darwin` 生成通用 `.dmg`。
 
-产物将自动上传至 GitHub Releases，用户直接下载安装包即可使用。
+只有两端构建全部成功且三种安装包均存在，才会创建 GitHub Release 并上传产物。构建设置超时并在任一平台失败时取消其他矩阵构建，避免继续消耗运行时间。不要把线上 Actions 用作试错环境；发布前先在本地检查工作流并构建。
+
+Dockerfile、Compose 和 Docker 发布工作流继续保留。Docker 镜像发布只有手动 `workflow_dispatch` 入口，不随 Tag 自动执行。
+
+### 当前安装包的运行依赖
+
+当前安装包包含桌面程序与前端，尚未内置 Python 后端、Python 运行时及 `xiaohongshu-mcp` 等发布工具。用户仍需按 README 准备项目源码、Python 依赖和发布工具，并通过 `REDINK_ROOT` 指向项目目录。开发机成功启动不能替代在全新环境中验证安装包。

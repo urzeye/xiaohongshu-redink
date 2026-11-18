@@ -1,9 +1,6 @@
 name: Publish Docker Image
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
@@ -46,11 +43,7 @@ jobs:
           set -euo pipefail
           IMAGE_NAME="$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
 
-          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
-            RAW_VERSION="${GITHUB_REF_NAME}"
-          else
-            RAW_VERSION="${{ github.event.inputs.version }}"
-          fi
+          RAW_VERSION="${{ github.event.inputs.version }}"
 
           if [[ ! "${RAW_VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "版本格式错误: ${RAW_VERSION}"
