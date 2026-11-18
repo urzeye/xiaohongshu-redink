@@ -129,7 +129,11 @@ function handleAxiosError(error: any, defaultMessage: string, defaultReturn: any
     if (error.response.status === 404) {
       return { success: false, ...defaultReturn, error: '资源不存在' }
     }
-    const errorMessage = error.response?.data?.error || error.message || defaultMessage
+    const errorMessage =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message ||
+      defaultMessage
     return { success: false, ...defaultReturn, error: errorMessage }
   }
   return { success: false, ...defaultReturn, error: '未知错误，请稍后重试' }
@@ -423,6 +427,7 @@ export interface VibeSurfStatus {
 
 export interface LoginStatus {
   logged_in: boolean
+  creator_authorized?: boolean
   username?: string
   message: string
 }
@@ -1152,16 +1157,31 @@ export async function checkXiaohongshuLogin(): Promise<{ success: boolean; statu
     }
 
     const loggedIn = Boolean(data.logged_in)
+    const creatorAuthorized = Boolean(data.creator_authorized ?? loggedIn)
     return {
       success: true,
       status: {
         logged_in: loggedIn,
+        creator_authorized: creatorAuthorized,
         username: data.username || data.user_info?.username,
         message: String(data.message || (loggedIn ? '已登录' : '未登录，请先登录小红书'))
       }
     }
   } catch (error) {
     return handleAxiosError(error, '检查登录状态失败')
+  }
+}
+
+export async function openCreatorLogin(): Promise<{
+  success: boolean
+  message?: string
+  error?: string
+}> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/publish/creator-login`, {}, { timeout: 30000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '打开创作者中心登录失败')
   }
 }
 

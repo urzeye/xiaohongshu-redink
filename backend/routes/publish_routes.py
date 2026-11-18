@@ -78,13 +78,18 @@ def create_publish_blueprint():
         """
         检查小红书登录状态
 
+        查询参数：
+        - force: 是否强制调用 MCP 真实检测（默认 false 优先读本地凭证）
+
         返回：
         - logged_in: 是否已登录
+        - creator_authorized: 是否已获得创作者服务中心授权
         - message: 状态消息
         - user_info: 用户信息（如果已登录）
         """
         try:
-            result = publish_application_service.check_login()
+            force = request.args.get('force', 'false').lower() in ('true', '1')
+            result = publish_application_service.check_login(force=force)
 
             return json_response(result, 200)
         except Exception as e:
@@ -92,15 +97,15 @@ def create_publish_blueprint():
             return json_response({
                 "success": False,
                 "logged_in": False,
-                "message": f"检查失败: {str(e)}"
+                "creator_authorized": False,
+                "message": f"检查失败: {str(e)}",
+                "error": str(e)
             }, 500)
 
     @publish_bp.route('/publish/login', methods=['POST'])
     def open_login():
         """
-        打开小红书登录页面
-
-        用户需要在弹出的浏览器中手动完成登录。
+        打开小红书登录页面或获取扫码登录二维码
         """
         try:
             result = publish_application_service.open_login_page()
@@ -108,6 +113,21 @@ def create_publish_blueprint():
             return json_response(result, 200)
         except Exception as e:
             logger.error(f"打开登录页面失败: {e}")
+            return json_response({
+                "success": False,
+                "error": str(e)
+            }, 500)
+
+    @publish_bp.route('/publish/creator-login', methods=['POST'])
+    def open_creator_login():
+        """
+        打开小红书创作者服务平台登录窗口/页面
+        """
+        try:
+            result = publish_application_service.open_creator_login()
+            return json_response(result, 200)
+        except Exception as e:
+            logger.error(f"打开创作者中心登录失败: {e}")
             return json_response({
                 "success": False,
                 "error": str(e)
@@ -168,8 +188,12 @@ def create_publish_blueprint():
                 tags=tags,
             )
 
-            status_code = 200 if result.get('success') else 500
-            return json_response(result, status_code)
+            if not result.get('success'):
+                if 'error' not in result and result.get('message'):
+                    result['error'] = result['message']
+                return json_response(result, 400)
+
+            return json_response(result, 200)
 
         except Exception as e:
             logger.error(f"发布失败: {e}")
@@ -215,8 +239,12 @@ def create_publish_blueprint():
                 tags=tags,
             )
 
-            status_code = 200 if result.get('success') else 500
-            return json_response(result, status_code)
+            if not result.get('success'):
+                if 'error' not in result and result.get('message'):
+                    result['error'] = result['message']
+                return json_response(result, 400)
+
+            return json_response(result, 200)
 
         except Exception as e:
             logger.error(f"发布视频失败: {e}")

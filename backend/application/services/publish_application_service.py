@@ -42,13 +42,17 @@ class PublishApplicationService:
         """安装 MCP 二进制。"""
         return self._run_async(self._service.install_mcp_binary())
 
-    def check_login(self) -> Dict[str, Any]:
+    def check_login(self, force: bool = False) -> Dict[str, Any]:
         """检查小红书登录状态。"""
-        return self._run_async(self._service.check_login())
+        return self._run_async(self._service.check_login(force=force))
 
     def open_login_page(self) -> Dict[str, Any]:
         """打开小红书登录页。"""
         return self._run_async(self._service.open_login_page())
+
+    def open_creator_login(self) -> Dict[str, Any]:
+        """打开小红书创作者服务中心登录页。"""
+        return self._run_async(self._service.open_creator_login())
 
     def publish(
         self,

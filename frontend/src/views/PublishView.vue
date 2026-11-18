@@ -65,7 +65,7 @@
               width: '12px',
               height: '12px',
               borderRadius: '50%',
-              background: loginStatus?.logged_in
+              background: (loginStatus?.logged_in && loginStatus?.creator_authorized)
                 ? 'var(--color-success)'
                 : 'var(--color-warning)',
             }"
@@ -75,22 +75,34 @@
         <span style="color: var(--text-sub); font-size: 14px">
           {{ loginStatus?.message || "检测中..." }}
         </span>
-        <button
-          v-if="!loginStatus?.logged_in"
-          class="btn btn-primary"
-          style="margin-left: auto; padding: 8px 16px; font-size: 14px"
-          @click="openLogin"
-          :disabled="openingLogin"
-        >
-          {{ openingLogin ? "打开中..." : "登录小红书" }}
-        </button>
-        <button
-          class="btn"
-          style="padding: 8px 16px; font-size: 14px"
-          @click="checkLogin"
-        >
-          刷新状态
-        </button>
+        <div style="margin-left: auto; display: flex; gap: 8px">
+          <button
+            v-if="!loginStatus?.logged_in"
+            class="btn btn-primary"
+            style="padding: 8px 16px; font-size: 14px"
+            @click="openLogin"
+            :disabled="openingLogin"
+          >
+            {{ openingLogin ? "打开中..." : "扫码登录主站" }}
+          </button>
+          <button
+            v-if="loginStatus?.logged_in && !loginStatus?.creator_authorized"
+            class="btn btn-primary"
+            style="padding: 8px 16px; font-size: 14px"
+            @click="openCreator"
+            :disabled="openingCreator"
+          >
+            {{ openingCreator ? "打开中..." : "授权创作者中心" }}
+          </button>
+          <button
+            class="btn"
+            style="padding: 8px 16px; font-size: 14px"
+            :disabled="checkingLogin"
+            @click="checkLogin(true)"
+          >
+            {{ checkingLogin ? "刷新中..." : "刷新状态" }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -395,6 +407,7 @@ import {
   installXiaohongshuMcp,
   checkXiaohongshuLogin,
   openXiaohongshuLogin,
+  openCreatorLogin,
   publishToXiaohongshu,
   type VibeSurfStatus,
   type LoginStatus,
@@ -411,6 +424,8 @@ const message = useMessage();
 const vibeSurfStatus = ref<VibeSurfStatus | null>(null);
 const loginStatus = ref<LoginStatus | null>(null);
 const openingLogin = ref(false);
+const openingCreator = ref(false);
+const checkingLogin = ref(false);
 const showQrModal = ref(false);
 const qrCodeUrl = ref("");
 const qrMessage = ref("");
@@ -441,6 +456,7 @@ const canPublish = computed(() => {
   return (
     vibeSurfStatus.value?.running &&
     loginStatus.value?.logged_in &&
+    loginStatus.value?.creator_authorized &&
     store.images.length > 0 &&
     selectedTitle.value &&
     copywriting.value
@@ -489,9 +505,6 @@ const checkVibeSurf = async () => {
     const result = await checkVibeSurfStatus();
     if (result.success && result.status) {
       vibeSurfStatus.value = result.status;
-      if (result.status.running) {
-        checkLogin();
-      }
     } else {
       vibeSurfStatus.value = {
         running: false,
@@ -511,11 +524,7 @@ const startVibeSurf = async () => {
       running: false,
       message: "正在启动服务...",
     };
-    // login-check 会通过后端 mcp_manager.ensure_running() 拉起 MCP 服务
-    const loginResult = await checkXiaohongshuLogin();
-    if (loginResult.success && loginResult.status) {
-      loginStatus.value = loginResult.status;
-    }
+    await checkVibeSurfStatus();
     await checkVibeSurf();
   } catch (e: any) {
     vibeSurfStatus.value = { running: false, message: e.message || "启动失败" };
@@ -567,7 +576,9 @@ const handleVibeSurfAction = async () => {
   await checkVibeSurf();
 };
 
-const checkLogin = async () => {
+const checkLogin = async (force: boolean = false) => {
+  if (checkingLogin.value) return;
+  checkingLogin.value = true;
   try {
     const result = await checkXiaohongshuLogin();
     if (result.success && result.status) {
@@ -575,11 +586,14 @@ const checkLogin = async () => {
     } else {
       loginStatus.value = {
         logged_in: false,
+        creator_authorized: false,
         message: result.error || "检测失败",
       };
     }
   } catch (e: any) {
-    loginStatus.value = { logged_in: false, message: e.message };
+    loginStatus.value = { logged_in: false, creator_authorized: false, message: e.message };
+  } finally {
+    checkingLogin.value = false;
   }
 };
 
@@ -603,9 +617,25 @@ const openLogin = async () => {
   }
 };
 
+const openCreator = async () => {
+  openingCreator.value = true;
+  try {
+    const result = await openCreatorLogin();
+    if (!result.success) {
+      message.error("打开创作者中心登录失败: " + (result.error || "未知错误"));
+    } else {
+      message.info(result.message || "请在创作者平台完成登录，登录后点击【刷新状态】");
+    }
+  } catch (e: any) {
+    message.error("打开创作者中心失败: " + e.message);
+  } finally {
+    openingCreator.value = false;
+  }
+};
+
 const handleQrScanDone = async () => {
   showQrModal.value = false;
-  await checkLogin();
+  await checkLogin(true);
 };
 
 const copyPostUrl = async () => {
@@ -679,6 +709,10 @@ onMounted(async () => {
   await checkVibeSurf();
   if (canStartService.value) {
     await startVibeSurf();
+  }
+  // 服务就绪时仅做一次登录态探活（优先读本地凭证，不弹浏览器）
+  if (vibeSurfStatus.value?.running) {
+    await checkLogin(false);
   }
 });
 </script>
