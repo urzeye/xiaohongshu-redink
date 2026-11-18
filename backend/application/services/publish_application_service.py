@@ -38,6 +38,10 @@ class PublishApplicationService:
         """获取 MCP 服务状态。"""
         return self._run_async(self._service.get_mcp_status())
 
+    def start_service(self) -> Dict[str, Any]:
+        """启动 MCP 服务进程。"""
+        return self._run_async(self._service.start_service())
+
     def install_mcp_binary(self) -> Dict[str, Any]:
         """安装 MCP 二进制。"""
         return self._run_async(self._service.install_mcp_binary())

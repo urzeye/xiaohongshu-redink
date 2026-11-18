@@ -44,6 +44,23 @@ def create_publish_blueprint():
                 "error": str(e)
             }, 500)
 
+    @publish_bp.route('/publish/start', methods=['POST'])
+    def start_mcp_service():
+        """
+        启动 MCP / VibeSurf 服务进程
+        """
+        try:
+            result = publish_application_service.start_service()
+            status_code = 200 if result.get("success") or result.get("running") else 500
+            return json_response(result, status_code)
+        except Exception as e:
+            logger.error(f"启动 MCP 服务失败: {e}")
+            return json_response({
+                "success": False,
+                "running": False,
+                "error": str(e)
+            }, 500)
+
     @publish_bp.route('/publish/install-tools', methods=['POST'])
     def install_mcp_tools():
         """

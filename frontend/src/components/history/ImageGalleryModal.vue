@@ -149,6 +149,7 @@
             >
               <n-image
                 :src="getImageUrl(img, record.images.task_id)"
+                :preview-src="getOriginalImageUrl(img, record.images.task_id)"
                 lazy
                 :img-props="{
                   loading: 'lazy',
@@ -286,6 +287,10 @@ function getImageUrl(filename: string, taskId: string) {
     return appendUrlParams(baseUrl, { retry: Date.now() });
   }
   return baseUrl;
+}
+
+function getOriginalImageUrl(filename: string, taskId: string) {
+  return buildImageUrl(taskId, filename, false);
 }
 
 function handleImageError(filename: string) {

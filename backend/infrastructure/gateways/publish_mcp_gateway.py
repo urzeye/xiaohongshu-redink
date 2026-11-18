@@ -41,6 +41,16 @@ class McpPublishGateway(PublishGatewayPort):
     def get_status(self) -> Dict[str, Any]:
         return mcp_manager.get_status()
 
+    def start_service(self) -> Dict[str, Any]:
+        started = mcp_manager.ensure_running()
+        status = mcp_manager.get_status()
+        return {
+            "success": started,
+            "running": started,
+            "message": "VibeSurf 服务已启动" if started else "VibeSurf 服务启动失败，请检查本地环境",
+            **status
+        }
+
     def install_binary(self) -> Dict[str, Any]:
         return mcp_manager.install_binary()
 

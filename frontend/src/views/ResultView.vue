@@ -941,9 +941,15 @@ async function hydrateFromHistoryRecord(recordId: string) {
   }
   store.taskId = taskId;
 
-  const totalPages = Array.isArray(record.outline?.pages) ? record.outline.pages.length : 0;
+  const rawPages = Array.isArray(record.outline?.pages) ? record.outline.pages : [];
+  const maxPages = Math.max(rawPages.length, generated.length);
+  const totalPages = maxPages;
+  const pageList = rawPages.length >= maxPages
+    ? rawPages
+    : Array.from({ length: maxPages }, (_, i) => rawPages[i] || { index: i, type: "content", content: "" });
+
   // 为所有页面恢复卡片状态，绝不置空
-  store.images = (record.outline?.pages || []).map((_, idx) => {
+  store.images = pageList.map((_, idx) => {
     const filename = generated[idx];
     if (taskId && filename) {
       return {

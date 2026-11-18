@@ -81,26 +81,56 @@ export function appendUrlParams(
 }
 
 /**
- * 为同源 API URL 自动附加 access_token（用于 img/src、a[href] 等无法带请求头的场景）。
+ * 为 API / 资源 URL 自动附加 access_token（用于 img/src、a[href] 等无法带请求头的场景）。
  */
 export function withAccessToken(rawUrl: string): string {
-  if (!accessToken || !rawUrl) return rawUrl
-  const isAbsoluteHttp = /^https?:\/\//i.test(rawUrl)
+  if (!rawUrl) return rawUrl
+  let resolvedUrl = rawUrl
+
+  // 桌面端环境兼容：相对路径且以 /api/ 或 /output/ 开头时补全后端基础地址
+  if (isTauriEnvironment() && (resolvedUrl.startsWith('/api/') || resolvedUrl.startsWith('/output/'))) {
+    const backendBase = getBackendBaseUrl()
+    if (backendBase) {
+      resolvedUrl = `${backendBase}${resolvedUrl}`
+    }
+  }
+
+  if (!accessToken) return resolvedUrl
+  const isAbsoluteHttp = /^https?:\/\//i.test(resolvedUrl)
 
   if (isAbsoluteHttp) {
     try {
-      const parsed = new URL(rawUrl)
-      const isSameOriginApi =
-        parsed.origin === window.location.origin && parsed.pathname.startsWith('/api/')
-      if (!isSameOriginApi) return rawUrl
+      const parsed = new URL(resolvedUrl)
+      const backendBase = getBackendBaseUrl()
+      let isBackendOrigin = false
+      if (backendBase) {
+        try {
+          const backendOrigin = new URL(backendBase).origin
+          if (parsed.origin === backendOrigin) {
+            isBackendOrigin = true
+          }
+        } catch {
+          // ignore
+        }
+      }
+      const isLoopbackBackend =
+        (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost') &&
+        (parsed.port === '12398' || !parsed.port)
+      const isWindowOrigin = typeof window !== 'undefined' && parsed.origin === window.location.origin
+
+      const isTargetApi =
+        (isWindowOrigin || isBackendOrigin || isLoopbackBackend) &&
+        (parsed.pathname.startsWith('/api/') || parsed.pathname.startsWith('/output/'))
+
+      if (!isTargetApi) return resolvedUrl
     } catch {
-      return rawUrl
+      return resolvedUrl
     }
-  } else if (!rawUrl.startsWith('/api/')) {
-    return rawUrl
+  } else if (!resolvedUrl.startsWith('/api/') && !resolvedUrl.startsWith('/output/')) {
+    return resolvedUrl
   }
 
-  return appendUrlParams(rawUrl, { access_token: accessToken })
+  return appendUrlParams(resolvedUrl, { access_token: accessToken })
 }
 
 axios.interceptors.request.use((config) => {
@@ -1132,6 +1162,35 @@ export async function checkVibeSurfStatus(): Promise<{ success: boolean; status?
     }
   } catch (error) {
     return handleAxiosError(error, '检查状态失败')
+  }
+}
+
+export async function startVibeSurfService(): Promise<{
+  success: boolean
+  running?: boolean
+  error?: string
+  status?: VibeSurfStatus
+}> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/publish/start`, {}, { timeout: 65000 })
+    const data = response.data || {}
+    const running = Boolean(data.running)
+    return {
+      success: data.success !== false && running,
+      running,
+      error: data.error,
+      status: {
+        running,
+        message: data.message || (running ? '服务已启动' : '服务未运行'),
+        version: data.version,
+        binary_installed: data.binary_installed,
+        binary_path: data.binary_path,
+        url: data.url,
+        pid: data.pid
+      }
+    }
+  } catch (error) {
+    return handleAxiosError(error, '启动 VibeSurf 服务失败')
   }
 }
 

@@ -12,6 +12,7 @@
         alt="cover"
         loading="lazy"
         decoding="async"
+        @error="handleThumbnailError"
       />
       <div
         v-else
@@ -99,8 +100,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { getImageUrl, getBackendBaseUrl } from "../../api";
+import { ref, computed } from "vue";
+import { getImageUrl, getBackendBaseUrl, withAccessToken } from "../../api";
 
 /**
  * 历史记录卡片组件
@@ -149,20 +150,34 @@ const statusText = computed(() => {
   return map[props.record.status] || props.record.status;
 });
 
+const thumbFailed = ref(false);
+
 /**
  * 获取缩略图 URL
- * 根据记录类型返回不同的路径
+ * 根据记录类型返回不同的路径，缩略图失败时自动回退原图
  */
 const thumbnailUrl = computed(() => {
   if (!props.record.thumbnail || !props.record.task_id) return "";
 
   if (props.record.recordType === "concept") {
     // 概念可视化图片路径
-    return `${getBackendBaseUrl()}/output/concepts/${props.record.task_id}/${props.record.thumbnail}`;
+    return withAccessToken(
+      `${getBackendBaseUrl()}/output/concepts/${props.record.task_id}/${props.record.thumbnail}`
+    );
   }
-  // 小红书图文路径
-  return getImageUrl(props.record.task_id, props.record.thumbnail);
+  // 小红书图文路径：优先缩略图，加载失败自动降级到原图
+  return getImageUrl(
+    props.record.task_id,
+    props.record.thumbnail,
+    !thumbFailed.value
+  );
 });
+
+function handleThumbnailError() {
+  if (!thumbFailed.value) {
+    thumbFailed.value = true;
+  }
+}
 
 /**
  * 获取类型标签

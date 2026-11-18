@@ -231,6 +231,21 @@ class PublishService:
         """
         return self.gateway.get_status()
 
+    async def start_service(self) -> Dict[str, Any]:
+        """
+        启动 MCP / VibeSurf 服务进程
+
+        Returns:
+            dict: 启动结果与当前状态
+        """
+        if hasattr(self.gateway, "start_service"):
+            result = self.gateway.start_service()
+            if isinstance(result, dict):
+                return result
+            return {"success": bool(result), "running": bool(result)}
+        status = await self.get_mcp_status()
+        return {"success": status.get("running", False), **status}
+
     async def install_mcp_binary(self) -> Dict[str, Any]:
         """
         安装 xiaohongshu-mcp 二进制。

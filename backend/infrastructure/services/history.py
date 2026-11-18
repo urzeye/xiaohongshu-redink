@@ -322,9 +322,24 @@ class HistoryService:
             if page_count == 0:
                 return None
 
+            # 获取所有已经被其他记录占用的 task_id，防止抢占其他记录的任务图片
+            claimed_task_ids = set()
+            try:
+                if os.path.exists(self.index_file):
+                    with open(self.index_file, "r", encoding="utf-8") as f:
+                        idx_data = json.load(f)
+                        records_list = idx_data if isinstance(idx_data, list) else idx_data.get("records", [])
+                        for item in records_list:
+                            if item.get("id") != record.get("id") and item.get("task_id"):
+                                claimed_task_ids.add(item.get("task_id"))
+            except Exception as e:
+                logger.warning(f"读取历史索引失败: {e}")
+
             candidate_dirs = []
             for entry in os.scandir(self.history_dir):
                 if entry.is_dir() and entry.name.startswith("task_"):
+                    if entry.name in claimed_task_ids:
+                        continue
                     if os.path.exists(os.path.join(entry.path, "0.png")):
                         stat = entry.stat()
                         candidate_dirs.append((entry.name, entry.path, stat.st_mtime))
@@ -364,9 +379,10 @@ class HistoryService:
                 # 兼容旧记录：补齐 content 结构
                 record["content"] = _normalize_content(record.get("content"))
 
-                # 自动挽救缺失 task_id 的图片数据
+                # 自动挽救缺失 task_id 的图片数据（草稿不自动挂载他人任务）
                 images_info = record.get("images")
-                if not isinstance(images_info, dict) or not images_info.get("task_id"):
+                status = record.get("status")
+                if status != "draft" and (not isinstance(images_info, dict) or not images_info.get("task_id")):
                     recovered = self._auto_recover_task_for_record(record)
                     if recovered:
                         record["images"] = recovered

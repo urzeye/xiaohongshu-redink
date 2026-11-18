@@ -76,3 +76,19 @@ def test_publish_intercepts_when_creator_unauthorized(tmp_path):
     assert result["success"] is False
     assert "创作者中心登录失效或未授权" in result["error"]
     assert "创作者中心登录失效或未授权" in result["message"]
+
+
+def test_start_service_delegates_to_gateway():
+    gateway = MagicMock()
+    gateway.start_service.return_value = {
+        "success": True,
+        "running": True,
+        "message": "VibeSurf 服务已启动"
+    }
+    svc = PublishService(gateway=gateway)
+
+    result = asyncio.run(svc.start_service())
+    assert result["success"] is True
+    assert result["running"] is True
+    gateway.start_service.assert_called_once()
+

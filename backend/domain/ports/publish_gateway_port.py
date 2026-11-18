@@ -28,6 +28,10 @@ class PublishGatewayPort(Protocol):
         """获取网关运行状态。"""
         ...
 
+    def start_service(self) -> Dict[str, Any]:
+        """启动发布网关服务进程。"""
+        ...
+
     def install_binary(self) -> Dict[str, Any]:
         """安装发布网关依赖的本地二进制。"""
         ...

@@ -404,6 +404,7 @@ import { useRouter } from "vue-router";
 import { useGeneratorStore } from "../stores/generator";
 import {
   checkVibeSurfStatus,
+  startVibeSurfService,
   installXiaohongshuMcp,
   checkXiaohongshuLogin,
   openXiaohongshuLogin,
@@ -524,8 +525,16 @@ const startVibeSurf = async () => {
       running: false,
       message: "正在启动服务...",
     };
-    await checkVibeSurfStatus();
+    const res = await startVibeSurfService();
+    if (res.success || res.running) {
+      message.success("VibeSurf 服务已启动");
+    } else {
+      message.error("启动服务失败: " + (res.error || "未知错误"));
+    }
     await checkVibeSurf();
+    if (vibeSurfStatus.value?.running) {
+      await checkLogin(false);
+    }
   } catch (e: any) {
     vibeSurfStatus.value = { running: false, message: e.message || "启动失败" };
     message.error("启动服务失败: " + (e?.message || "未知错误"));

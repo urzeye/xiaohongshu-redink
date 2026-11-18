@@ -24,6 +24,19 @@ def _validate_current_request_token():
     if not auth_token:
         return None
 
+    # 本地回环发起的静态图片与产物 GET/HEAD 请求放行（避免桌面端 WebView 无法注入请求头或跨源 query 丢失导致的裂图）
+    if request.method in ('GET', 'HEAD') and (
+        request.path.startswith('/api/images/') or
+        request.path.startswith('/output/') or
+        (request.path.startswith('/api/history/') and request.path.endswith('/download'))
+    ):
+        token = request.args.get('access_token', '').strip()
+        if token == auth_token:
+            return None
+        client_ip = request.remote_addr or ''
+        if client_ip in ('127.0.0.1', '::1', 'localhost', 'testclient'):
+            return None
+
     auth_header = request.headers.get('Authorization', '')
     token = ''
     if auth_header.startswith('Bearer '):
