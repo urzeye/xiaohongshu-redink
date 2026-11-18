@@ -1,6 +1,6 @@
 [package]
 name = "redink"
-version = "0.3.5"
+version = "0.4.0"
 description = "RedInk AI - 小红书爆款图文创作与发布工具"
 authors = ["RedInk Team"]
 license = "CC-BY-NC-SA-4.0"
