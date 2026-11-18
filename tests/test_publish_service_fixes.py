@@ -92,3 +92,28 @@ def test_start_service_delegates_to_gateway():
     assert result["running"] is True
     gateway.start_service.assert_called_once()
 
+
+def test_sync_creator_session_cookie(tmp_path):
+    svc = PublishService(gateway=MagicMock())
+    svc.project_root = tmp_path
+    cookies_path = tmp_path / "cookies.json"
+    cookies_path.write_text(
+        json.dumps({
+            "version": 1,
+            "cookies": [
+                {"name": "web_session", "value": "test_web_session_val", "domain": ".xiaohongshu.com"}
+            ]
+        }),
+        encoding="utf-8"
+    )
+
+    synced = svc._sync_creator_session_cookie()
+    assert synced is True
+
+    updated_data = json.loads(cookies_path.read_text(encoding="utf-8"))
+    cookies = updated_data.get("cookies", [])
+    galaxy_cookies = [c for c in cookies if c.get("name") == "galaxy_creator_session_id"]
+    assert len(galaxy_cookies) == 2
+    assert all(c["value"] == "test_web_session_val" for c in galaxy_cookies)
+
+

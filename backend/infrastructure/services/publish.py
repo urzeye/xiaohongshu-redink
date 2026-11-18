@@ -255,8 +255,81 @@ class PublishService:
         """
         return self.gateway.install_binary()
 
+    def _sync_creator_session_cookie(self) -> bool:
+        """
+        自动同步 galaxy_creator_session_id 到 cookies.json。
+
+        背景：新版小红书创作者服务平台已与主站会话（web_session）深度融合，
+        不再单独下发 galaxy_creator_session_id Cookie；但底层 xiaohongshu-mcp
+        二进制的 hasCreatorSession() 仍硬编码校验此 Cookie。
+        若缺失，mcp 会误判为“创作者中心登录失效，请重新扫码登录”。
+
+        此函数将当前主站 web_session 映射注入为 galaxy_creator_session_id，
+        确保 MCP 检查通过并顺利进入发布流程。
+        """
+        cookies_file = self.project_root / "cookies.json"
+        if not cookies_file.exists():
+            return False
+        try:
+            with open(cookies_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            cookies = data.get("cookies", [])
+            if not isinstance(cookies, list) or not cookies:
+                return False
+
+            web_session = next(
+                (c.get("value") for c in cookies if isinstance(c, dict) and c.get("name") == "web_session" and c.get("value")),
+                None
+            )
+            if not web_session:
+                return False
+
+            existing_galaxy = [
+                c for c in cookies if isinstance(c, dict) and c.get("name") == "galaxy_creator_session_id"
+            ]
+
+            # 如果已经存在且值匹配，无需重复写入
+            if existing_galaxy and any(c.get("value") == web_session for c in existing_galaxy):
+                return True
+
+            # 清理旧的 galaxy_creator_session_id 项
+            cookies = [c for c in cookies if not (isinstance(c, dict) and c.get("name") == "galaxy_creator_session_id")]
+
+            # 注入新的映射项（支持顶级域名和创作者子域）
+            cookies.append({
+                "name": "galaxy_creator_session_id",
+                "value": web_session,
+                "domain": ".xiaohongshu.com",
+                "path": "/",
+                "httpOnly": False,
+                "secure": True,
+                "session": True,
+            })
+            cookies.append({
+                "name": "galaxy_creator_session_id",
+                "value": web_session,
+                "domain": "creator.xiaohongshu.com",
+                "path": "/",
+                "httpOnly": False,
+                "secure": True,
+                "session": True,
+            })
+
+            data["cookies"] = cookies
+            with open(cookies_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            logger.info("已自动同步 galaxy_creator_session_id 到 cookies.json")
+            return True
+        except Exception as e:
+            logger.warning(f"自动同步创作者中心会话 Cookie 失败: {e}")
+            return False
+
     def _get_local_cookies_status(self) -> Dict[str, Any]:
         """从本地 cookies.json 检查登录与创作者中心凭证状态"""
+        # 优先确保创作者会话 Cookie 已同步
+        self._sync_creator_session_cookie()
+
         cookies_file = self.project_root / "cookies.json"
         if not cookies_file.exists():
             return {
