@@ -93,11 +93,32 @@ def _contains_unresolved_env_var(value: Any) -> bool:
 
 
 def _load_dotenv_file():
-    """加载 .env（优先项目根目录，其次当前工作目录）"""
+    """加载 .env（优先数据目录，其次项目根目录，其次当前工作目录）"""
+    data_dir_env = os.getenv("REDINK_DATA_DIR")
+    if data_dir_env:
+        data_dir = Path(data_dir_env)
+        data_env_path = data_dir / ".env"
+        if data_env_path.exists():
+            load_dotenv(data_env_path)
+            logger.info(f"已从数据目录加载 .env 文件: {data_env_path}")
+            return
+        # 保证数据目录下有 .env.example 模版供用户直接参考修改
+        example_in_data = data_dir / ".env.example"
+        if not example_in_data.exists():
+            root_example = _get_project_root() / ".env.example"
+            if root_example.exists():
+                try:
+                    import shutil
+
+                    shutil.copyfile(root_example, example_in_data)
+                    logger.info(f"已自动生成数据目录配置示例模版: {example_in_data}")
+                except Exception as ex:
+                    logger.warning(f"复制 .env.example 到数据目录失败: {ex}")
+
     env_path = _get_project_root() / ".env"
     if env_path.exists():
         load_dotenv(env_path)
-        logger.debug(f"已加载 .env 文件: {env_path}")
+        logger.info(f"已加载 .env 文件: {env_path}")
     else:
         load_dotenv()
         logger.debug(f"项目根目录未找到 .env: {env_path}，已尝试从工作目录加载")

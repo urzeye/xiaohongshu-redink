@@ -35,12 +35,55 @@ impl ProcessManager {
         let project_root = Self::detect_project_root();
         info!("[ProcessManager] Resolved project root: {:?}", project_root);
 
+        let data_dir = Self::resolve_data_dir(&project_root);
+        Self::load_env_files(&project_root, &data_dir);
+
+        let host = std::env::var("REDINK_HOST").unwrap_or(host);
+        let port = std::env::var("REDINK_PORT")
+            .ok()
+            .and_then(|p| p.parse::<u16>().ok())
+            .unwrap_or(port);
+
+        info!("[ProcessManager] Service target: {}:{}", host, port);
+
         Self {
             child: Arc::new(Mutex::new(None)),
             last_error: Arc::new(Mutex::new(None)),
             project_root,
             host,
             port,
+        }
+    }
+
+    /// 从数据目录及项目根目录中加载 .env 环境变量（如果当前尚未设置）
+    pub fn load_env_files(project_root: &PathBuf, data_dir: &PathBuf) {
+        let env_candidates = [
+            data_dir.join(".env"),
+            project_root.join(".env"),
+        ];
+
+        for path in &env_candidates {
+            if path.is_file() {
+                info!("[ProcessManager] Found .env at {:?}, loading environment variables", path);
+                if let Ok(content) = std::fs::read_to_string(path) {
+                    for line in content.lines() {
+                        let line = line.trim();
+                        if line.is_empty() || line.starts_with('#') {
+                            continue;
+                        }
+                        if let Some((k, v)) = line.split_once('=') {
+                            let k = k.trim();
+                            let v = v.trim().trim_matches('"').trim_matches('\'');
+                            if !k.is_empty() && std::env::var(k).is_err() {
+                                unsafe {
+                                    std::env::set_var(k, v);
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
         }
     }
 
@@ -107,21 +150,29 @@ impl ProcessManager {
         }
 
         // 3. 检查当前可执行文件所在目录及其祖先目录
-        if let Ok(mut exe) = std::env::current_exe() {
-            for _ in 0..5 {
-                if exe.pop() {
-                    if exe.join("backend").join("app.py").exists() {
-                        return exe;
-                    }
-                    // macOS app bundle: Contents/Resources
-                    if exe.join("Resources").join("backend").join("app.py").exists() {
-                        return exe.join("Resources");
-                    }
-                    if exe.join("resources").join("backend").join("app.py").exists() {
-                        return exe.join("resources");
-                    }
-                } else {
-                    break;
+        if let Ok(exe) = std::env::current_exe() {
+            // 如果可执行文件位于 target/release 或 target/debug 等构建输出目录中，
+            // 向上寻找真实的工作区根目录（避免把 target/release 误当成项目根目录）
+            for ancestor in exe.ancestors().skip(1) {
+                let name = ancestor.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+                if (name == "release" || name == "debug")
+                    && ancestor.parent().and_then(|p| p.file_name()).map(|n| n == "target").unwrap_or(false)
+                {
+                    // 在 target 构建输出目录中，继续往上找包含 pyproject.toml 的真实源码根目录
+                    continue;
+                }
+                if ancestor.file_name().map(|n| n == "target").unwrap_or(false) {
+                    continue;
+                }
+                if ancestor.join("backend").join("app.py").exists() {
+                    return ancestor.to_path_buf();
+                }
+                // macOS app bundle: Contents/Resources
+                if ancestor.join("Resources").join("backend").join("app.py").exists() {
+                    return ancestor.join("Resources");
+                }
+                if ancestor.join("resources").join("backend").join("app.py").exists() {
+                    return ancestor.join("resources");
                 }
             }
         }
@@ -161,12 +212,12 @@ impl ProcessManager {
         self.project_root.clone()
     }
 
-    pub fn get_data_dir(&self) -> PathBuf {
+    pub fn resolve_data_dir(project_root: &PathBuf) -> PathBuf {
         // 如果项目根目录有效存在且不是系统根目录 /，且处于开发目录模式
-        if self.project_root != PathBuf::from("/") && self.project_root.join("backend").join("app.py").exists() {
-            let candidate = self.project_root.join("data");
+        if project_root != &PathBuf::from("/") && project_root.join("backend").join("app.py").exists() {
+            let candidate = project_root.join("data");
             // 确保不是在 /Applications 只读 app bundle 内
-            if !self.project_root.to_string_lossy().contains(".app/Contents") {
+            if !project_root.to_string_lossy().contains(".app/Contents") {
                 return candidate;
             }
         }
@@ -181,10 +232,14 @@ impl ProcessManager {
             return home.join(".local").join("share").join("redink").join("data");
         }
 
-        self.project_root.join("data")
+        project_root.join("data")
     }
 
-    pub fn get_logs_dir(&self) -> PathBuf {
+    pub fn get_data_dir(&self) -> PathBuf {
+        Self::resolve_data_dir(&self.project_root)
+    }
+
+    pub fn resolve_logs_dir(project_root: &PathBuf) -> PathBuf {
         // macOS 上 tauri_plugin_log 默认输出目录
         #[cfg(target_os = "macos")]
         if let Some(home) = Self::get_user_home() {
@@ -194,9 +249,9 @@ impl ProcessManager {
             }
         }
 
-        if self.project_root != PathBuf::from("/") && self.project_root.join("backend").join("app.py").exists() {
-            if !self.project_root.to_string_lossy().contains(".app/Contents") {
-                return self.project_root.join("logs");
+        if project_root != &PathBuf::from("/") && project_root.join("backend").join("app.py").exists() {
+            if !project_root.to_string_lossy().contains(".app/Contents") {
+                return project_root.join("logs");
             }
         }
 
@@ -207,7 +262,29 @@ impl ProcessManager {
             return home.join(".redink").join("logs");
         }
 
-        self.project_root.join("logs")
+        project_root.join("logs")
+    }
+
+    pub fn get_logs_dir(&self) -> PathBuf {
+        Self::resolve_logs_dir(&self.project_root)
+    }
+
+    /// 读取日志文件末尾指定行数，用于在进程异常退出时快速提取诊断错误
+    pub fn read_log_tail(path: &PathBuf, max_lines: usize) -> String {
+        if let Ok(content) = std::fs::read_to_string(path) {
+            let lines: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
+            if lines.is_empty() {
+                return String::new();
+            }
+            let start = if lines.len() > max_lines {
+                lines.len() - max_lines
+            } else {
+                0
+            };
+            lines[start..].join(" \n ")
+        } else {
+            String::new()
+        }
     }
 
     /// 跨平台搜索可用的 Python 解释器
@@ -411,6 +488,31 @@ impl ProcessManager {
         let _ = std::fs::create_dir_all(&data_dir);
         let _ = std::fs::create_dir_all(&logs_dir);
 
+        // 如果 data/.env.example 不存在，且项目或资源根目录下有 .env.example，则自动复制过去作为配置模版
+        let data_env_example = data_dir.join(".env.example");
+        let root_env_example = self.project_root.join(".env.example");
+        if !data_env_example.exists() && root_env_example.exists() {
+            let _ = std::fs::copy(&root_env_example, &data_env_example);
+        }
+
+        let process_log_path = logs_dir.join("backend_process.log");
+        let log_file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&process_log_path);
+
+        match log_file {
+            Ok(file) => {
+                if let Ok(file_clone) = file.try_clone() {
+                    cmd.stdout(std::process::Stdio::from(file));
+                    cmd.stderr(std::process::Stdio::from(file_clone));
+                }
+            }
+            Err(e) => {
+                warn!("无法创建 backend_process.log: {}", e);
+            }
+        }
+
         cmd.current_dir(&self.project_root);
         cmd.env("PATH", Self::get_enhanced_path());
         cmd.env("PYTHONUNBUFFERED", "1");
@@ -465,7 +567,13 @@ impl ProcessManager {
                 match c.try_wait() {
                     Ok(Some(status)) => {
                         error!("Python backend exited unexpectedly with status: {}", status);
-                        return Err(format!("Python 后端异常退出 (状态码: {})，请检查依赖或日志", status));
+                        let tail = Self::read_log_tail(&process_log_path, 4);
+                        let detail = if !tail.is_empty() {
+                            format!(": {}", tail)
+                        } else {
+                            String::new()
+                        };
+                        return Err(format!("Python 后端异常退出 (状态码: {}){}，请检查依赖或运行日志", status, detail));
                     }
                     Ok(None) => {}
                     Err(e) => {
@@ -475,7 +583,13 @@ impl ProcessManager {
             }
         }
 
-        Err(format!("等待服务启动超时（30秒内未在 {}:{} 探活成功）", self.host, self.port))
+        let tail = Self::read_log_tail(&process_log_path, 4);
+        let detail = if !tail.is_empty() {
+            format!("，最新输出: {}", tail)
+        } else {
+            String::new()
+        };
+        Err(format!("等待服务启动超时（30秒内未在 {}:{} 探活成功）{}", self.host, self.port, detail))
     }
 
     /// 停止 Python 后端子进程

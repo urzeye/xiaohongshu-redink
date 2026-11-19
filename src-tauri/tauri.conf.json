@@ -37,7 +37,8 @@
       "../alembic.ini": "alembic.ini",
       "../text_providers.yaml.example": "text_providers.yaml.example",
       "../image_providers.yaml.example": "image_providers.yaml.example",
-      "../search_providers.yaml.example": "search_providers.yaml.example"
+      "../search_providers.yaml.example": "search_providers.yaml.example",
+      "../.env.example": ".env.example"
     },
     "icon": [
       "icons/32x32.png",

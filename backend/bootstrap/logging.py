@@ -58,7 +58,7 @@ def configure_logging(settings: AppSettings) -> logging.Logger:
     try:
         from logging.handlers import RotatingFileHandler
 
-        log_dir = settings.project_root / "logs"
+        log_dir = settings.logs_dir
         log_dir.mkdir(parents=True, exist_ok=True)
         file_handler = RotatingFileHandler(
             log_dir / "redink.log",

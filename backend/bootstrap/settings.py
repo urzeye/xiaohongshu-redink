@@ -105,6 +105,8 @@ class AppSettings:
     project_root: Path
     frontend_dist: Path
     output_dir: Path
+    logs_dir: Path = Path("logs")
+    data_dir: Path = Path("data")
 
     @property
     def serve_frontend(self) -> bool:
@@ -115,6 +117,21 @@ class AppSettings:
         project_root = Path(
             os.getenv("REDINK_ROOT") or Path(__file__).resolve().parents[2]
         )
+        data_dir = Path(os.getenv("REDINK_DATA_DIR")) if os.getenv("REDINK_DATA_DIR") else project_root / "data"
+        logs_dir = Path(os.getenv("REDINK_LOGS_DIR")) if os.getenv("REDINK_LOGS_DIR") else project_root / "logs"
+
+        try:
+            from dotenv import load_dotenv
+
+            if (data_dir / ".env").is_file():
+                load_dotenv(data_dir / ".env", override=False)
+            elif (project_root / ".env").is_file():
+                load_dotenv(project_root / ".env", override=False)
+            else:
+                load_dotenv(override=False)
+        except Exception:
+            pass
+
         default_app_name, default_app_version = _read_project_metadata(project_root)
         default_cors = [
             "http://localhost:5173",
@@ -143,4 +160,6 @@ class AppSettings:
             project_root=project_root,
             frontend_dist=project_root / "frontend" / "dist",
             output_dir=project_root / "output",
+            logs_dir=logs_dir,
+            data_dir=data_dir,
         )

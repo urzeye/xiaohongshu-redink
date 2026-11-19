@@ -93,6 +93,9 @@ tools/xiaohongshu-mcp/config.json
 # Data directory (contains login sessions)
 cookies.json
 data/*.db
+data/history/
+data/.env*
+!data/.env.example.template
 data/xiaohongshu/*
 !data/xiaohongshu/.gitkeep
 

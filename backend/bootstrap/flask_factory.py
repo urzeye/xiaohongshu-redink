@@ -190,6 +190,16 @@ def create_app(settings: AppSettings | None = None) -> Flask:
     """创建并装配 Flask 应用。"""
     runtime_settings = settings or AppSettings.from_env()
     logger = configure_logging(runtime_settings)
+
+    def _handle_uncaught_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        logger.critical("[FATAL] 未捕获异常导致退出", exc_info=(exc_type, exc_value, exc_traceback))
+
+    import sys
+    sys.excepthook = _handle_uncaught_exception
+
     logger.info(f"[BOOT] 正在启动 {runtime_settings.app_name} (xiaohongshu-redink)...")
 
     app = _create_flask_app(runtime_settings, logger)

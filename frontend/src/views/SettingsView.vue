@@ -91,6 +91,9 @@
             {{ desktopRestarting ? "正在重启..." : "重启本地引擎" }}
           </button>
         </div>
+        <p class="security-hint" style="margin-top: 10px; font-size: 12px; color: #64748b;">
+          💡 配置说明：服务商与模型参数可在下方界面直接修改并持久化保存；如需调整底层环境变量（如端口 REDINK_PORT、云端同步 Supabase 等），可点击「打开数据目录」创建或编辑 .env 文件（目录内已自动提供 .env.example 模版），保存后点击「重启本地引擎」生效。
+        </p>
       </div>
 
       <div class="card">
