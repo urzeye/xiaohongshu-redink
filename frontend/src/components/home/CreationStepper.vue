@@ -79,11 +79,11 @@ function handleStepClick(key: StepKey) {
 <style scoped>
 .creation-stepper {
   width: 100%;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 14px 24px;
+  padding: 10px 20px;
   box-shadow: var(--shadow-sm);
 }
 

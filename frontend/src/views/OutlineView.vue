@@ -1047,12 +1047,15 @@ watch(
 
 <style scoped>
 .outline-page-container {
+  width: 100%;
   max-width: 100%;
+  overflow-x: hidden;
 }
 
 .outline-page-header {
-  max-width: 1240px;
-  margin: 0 auto 28px auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 20px 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
@@ -1112,11 +1115,13 @@ watch(
 
 .outline-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 24px;
-  max-width: 1520px;
-  margin: 0 auto;
-  padding: 0 20px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .outline-card {
@@ -1539,20 +1544,25 @@ watch(
 /* Floating AI Revision input */
 .revision-float-box {
   position: fixed;
-  bottom: 40px;
-  left: 50%;
+  bottom: 24px;
+  left: calc(50% + var(--sidebar-width, 260px) / 2);
   transform: translateX(-50%);
-  width: 90%;
-  max-width: 800px;
+  width: min(760px, calc(100vw - var(--sidebar-width, 260px) - 48px));
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 100px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   display: flex;
   align-items: center;
   box-shadow: var(--shadow-xl);
   z-index: 100;
   backdrop-filter: blur(10px);
+  transition: left var(--transition-base), width var(--transition-base);
+}
+
+:global(#app.sidebar-collapsed) .revision-float-box {
+  left: calc(50% + 36px);
+  width: min(760px, calc(100vw - 72px - 48px));
 }
 
 .revision-input {
@@ -1651,7 +1661,8 @@ watch(
   }
 
   .revision-float-box {
-    width: calc(100vw - 28px);
+    left: 50% !important;
+    width: calc(100vw - 28px) !important;
     bottom: 14px;
   }
 
