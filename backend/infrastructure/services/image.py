@@ -46,12 +46,21 @@ class ImageService:
             provider_name = self.provider_config_service.get_active_image_provider()
 
         logger.info(f"使用图片服务商: {provider_name}")
-        provider_config = self.provider_config_service.resolve_image_provider_config(provider_name=provider_name)
+        provider_config = {}
+        try:
+            provider_config = self.provider_config_service.resolve_image_provider_config(provider_name=provider_name)
+        except Exception as e:
+            logger.warning(f"ImageService 暂未配置有效服务商: {e}")
 
         # 创建生成器实例
-        provider_type = provider_config.get('type', provider_name)
-        logger.debug(f"创建生成器: type={provider_type}")
-        self.generator = ImageGeneratorFactory.create(provider_type, provider_config)
+        self.generator = None
+        if provider_config:
+            provider_type = provider_config.get('type', provider_name)
+            logger.debug(f"创建生成器: type={provider_type}")
+            try:
+                self.generator = ImageGeneratorFactory.create(provider_type, provider_config)
+            except Exception as e:
+                logger.warning(f"创建图片生成器失败: {e}")
 
         # 保存配置信息
         self.provider_name = provider_name
@@ -209,6 +218,8 @@ class ImageService:
                 page_specific_image_data = None
 
         try:
+            if not self.generator:
+                raise ValueError("未找到可用的图片生成服务商配置，请在系统设置中配置图片服务商")
             logger.debug(f"生成图片 [{index}]: type={page_type}")
 
             # 根据配置选择模板（短 prompt 或完整 prompt）

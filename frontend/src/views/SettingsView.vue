@@ -510,7 +510,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { NSelect } from "naive-ui";
+import { NSelect, useMessage } from "naive-ui";
 import {
   getHealth,
   getAccessToken,
@@ -538,6 +538,7 @@ import {
   type PlatformInfo,
 } from "../utils/tauri";
 
+const message = useMessage();
 const isTauri = ref(isTauriEnvironment());
 const desktopStatus = ref<BackendStatus | null>(null);
 const platformInfo = ref<PlatformInfo | null>(null);
@@ -556,19 +557,30 @@ async function refreshDesktopStatus() {
 }
 
 async function handleOpenDataFolder() {
-  await openDataFolder();
+  try {
+    await openDataFolder();
+    message.success("已请求系统打开数据目录");
+  } catch (e: any) {
+    message.error("打开数据目录失败: " + (e?.message || e));
+  }
 }
 
 async function handleOpenLogsFolder() {
-  await openLogsFolder();
+  try {
+    await openLogsFolder();
+    message.success("已请求系统打开日志目录");
+  } catch (e: any) {
+    message.error("打开日志目录失败: " + (e?.message || e));
+  }
 }
 
 async function handleRestartBackend() {
   desktopRestarting.value = true;
   try {
     desktopStatus.value = await restartBackend();
+    message.success("本地引擎重启成功");
   } catch (e: any) {
-    alert("重启后端失败: " + (e?.message || e));
+    message.error("重启后端失败: " + (e?.message || e));
   } finally {
     desktopRestarting.value = false;
   }

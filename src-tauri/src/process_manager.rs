@@ -42,6 +42,17 @@ impl ProcessManager {
         }
     }
 
+    pub fn get_user_home() -> Option<PathBuf> {
+        #[cfg(target_os = "windows")]
+        {
+            std::env::var("USERPROFILE").ok().map(PathBuf::from)
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            std::env::var("HOME").ok().map(PathBuf::from)
+        }
+    }
+
     /// 自动推断项目根目录路径（支持开发环境与跨平台打包安装环境）
     pub fn detect_project_root() -> PathBuf {
         // 1. 优先使用显式指定的环境变量
@@ -52,14 +63,16 @@ impl ProcessManager {
             }
         }
 
-        // 2. 检查当前工作目录
+        // 2. 检查当前工作目录（排除系统根目录 /）
         if let Ok(cwd) = std::env::current_dir() {
-            if cwd.join("backend").join("app.py").exists() {
-                return cwd;
-            }
-            if let Some(parent) = cwd.parent() {
-                if parent.join("backend").join("app.py").exists() {
-                    return parent.to_path_buf();
+            if cwd != PathBuf::from("/") {
+                if cwd.join("backend").join("app.py").exists() {
+                    return cwd;
+                }
+                if let Some(parent) = cwd.parent() {
+                    if parent != PathBuf::from("/") && parent.join("backend").join("app.py").exists() {
+                        return parent.to_path_buf();
+                    }
                 }
             }
         }
@@ -81,8 +94,34 @@ impl ProcessManager {
             }
         }
 
-        // 降级为当前目录
-        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+        // 4. 启发式探测用户主目录下的常见开发工作区（解决 macOS 从访达启动不继承终端环境变量的问题）
+        if let Some(home) = Self::get_user_home() {
+            let candidates = [
+                home.join("workspace").join("xiaohongshu-redink"),
+                home.join("workspace").join("RedInk"),
+                home.join("Projects").join("xiaohongshu-redink"),
+                home.join("Development").join("xiaohongshu-redink"),
+            ];
+            for cand in candidates {
+                if cand.join("backend").join("app.py").exists() {
+                    info!("[ProcessManager] Found project root via heuristic: {:?}", cand);
+                    return cand;
+                }
+            }
+        }
+
+        // 5. 降级安全处理：避免降级到系统只读根目录 /
+        if let Ok(cwd) = std::env::current_dir() {
+            if cwd != PathBuf::from("/") {
+                return cwd;
+            }
+        }
+
+        if let Some(home) = Self::get_user_home() {
+            home.join(".redink")
+        } else {
+            PathBuf::from(".")
+        }
     }
 
     #[allow(dead_code)]
@@ -91,10 +130,51 @@ impl ProcessManager {
     }
 
     pub fn get_data_dir(&self) -> PathBuf {
+        // 如果项目根目录有效存在且不是系统根目录 /，且处于开发目录模式
+        if self.project_root != PathBuf::from("/") && self.project_root.join("backend").join("app.py").exists() {
+            let candidate = self.project_root.join("data");
+            // 确保不是在 /Applications 只读 app bundle 内
+            if !self.project_root.to_string_lossy().contains(".app/Contents") {
+                return candidate;
+            }
+        }
+
+        // 桌面端规范：写入用户应用数据目录
+        if let Some(home) = Self::get_user_home() {
+            #[cfg(target_os = "macos")]
+            return home.join("Library").join("Application Support").join("RedInk").join("data");
+            #[cfg(target_os = "windows")]
+            return home.join("AppData").join("Roaming").join("RedInk").join("data");
+            #[cfg(target_os = "linux")]
+            return home.join(".local").join("share").join("redink").join("data");
+        }
+
         self.project_root.join("data")
     }
 
     pub fn get_logs_dir(&self) -> PathBuf {
+        // macOS 上 tauri_plugin_log 默认输出目录
+        #[cfg(target_os = "macos")]
+        if let Some(home) = Self::get_user_home() {
+            let standard_log = home.join("Library").join("Logs").join("com.redink.desktop");
+            if standard_log.exists() {
+                return standard_log;
+            }
+        }
+
+        if self.project_root != PathBuf::from("/") && self.project_root.join("backend").join("app.py").exists() {
+            if !self.project_root.to_string_lossy().contains(".app/Contents") {
+                return self.project_root.join("logs");
+            }
+        }
+
+        if let Some(home) = Self::get_user_home() {
+            #[cfg(target_os = "macos")]
+            return home.join("Library").join("Logs").join("com.redink.desktop");
+            #[cfg(not(target_os = "macos"))]
+            return home.join(".redink").join("logs");
+        }
+
         self.project_root.join("logs")
     }
 

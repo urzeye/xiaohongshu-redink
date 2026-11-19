@@ -135,6 +135,17 @@ class YamlConfigStore(BaseConfigStore):
     def load(self, config_name: str, default: Dict[str, Any]) -> Dict[str, Any]:
         path = self._config_path(config_name)
         if not path.exists():
+            example_path = path.with_name(f"{path.name}.example")
+            if example_path.exists():
+                try:
+                    with open(example_path, "r", encoding="utf-8") as f:
+                        example_data = yaml.safe_load(f) or {}
+                    if isinstance(example_data, dict) and example_data:
+                        logger.info(f"配置文件未找到，已自动从示例模版加载初始结构: {example_path}")
+                        return example_data
+                except Exception as ex:
+                    logger.warning(f"读取示例配置文件失败: {example_path}, err={ex}")
+
             logger.debug(f"配置文件不存在，使用默认配置: {path}")
             return deepcopy(default)
 

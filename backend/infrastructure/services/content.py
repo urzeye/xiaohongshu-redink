@@ -22,9 +22,20 @@ class ContentService:
         logger.debug("初始化 ContentService...")
         self.config_service = get_config_service()
         self.text_config = self._load_text_config()
-        self.client, self.active_provider, self.active_provider_config = self._get_client()
+        self.client, self.active_provider, self.active_provider_config = self._init_client_safe()
         self.prompt_template = self._load_prompt_template()
-        logger.info(f"ContentService 初始化完成，使用服务商: {self.active_provider}")
+        if self.active_provider:
+            logger.info(f"ContentService 初始化完成，使用服务商: {self.active_provider}")
+        else:
+            logger.info("ContentService 初始化完成（未配置服务商，等待配置）")
+
+    def _init_client_safe(self) -> tuple[Any, str, Dict[str, Any]]:
+        """安全初始化客户端，未配置或缺少密钥时不崩溃，延迟至实际请求时处理。"""
+        try:
+            return self._get_client()
+        except Exception as e:
+            logger.warning(f"ContentService 暂未配置有效服务商: {e}")
+            return None, "", {}
 
     def _load_text_config(self) -> dict:
         """加载文本生成配置（支持 .env 变量解析）。"""
@@ -45,7 +56,7 @@ class ContentService:
     def reload_config(self) -> None:
         """重新加载文本配置并更新默认客户端。"""
         self.text_config = self._load_text_config()
-        self.client, self.active_provider, self.active_provider_config = self._get_client()
+        self.client, self.active_provider, self.active_provider_config = self._init_client_safe()
 
     def _get_client(self) -> tuple[Any, str, Dict[str, Any]]:
         """根据配置获取可用客户端，优先 active_provider。"""

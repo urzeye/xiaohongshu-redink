@@ -51,17 +51,29 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             }
             "open_data" => {
                 if let Some(pm) = app.try_state::<crate::process_manager::ProcessManager>() {
-                    let _ = crate::commands::open_data_folder(pm);
+                    if let Err(e) = crate::commands::open_data_folder(pm) {
+                        log::error!("托盘打开数据目录失败: {}", e);
+                    }
                 }
             }
             "open_logs" => {
                 if let Some(pm) = app.try_state::<crate::process_manager::ProcessManager>() {
-                    let _ = crate::commands::open_logs_folder(pm);
+                    if let Err(e) = crate::commands::open_logs_folder(pm) {
+                        log::error!("托盘打开运行日志目录失败: {}", e);
+                    }
                 }
             }
             "restart" => {
                 if let Some(pm) = app.try_state::<crate::process_manager::ProcessManager>() {
-                    let _ = pm.restart();
+                    let pm_clone = pm.inner().clone();
+                    std::thread::spawn(move || {
+                        log::info!("托盘触发重启本地引擎...");
+                        if let Err(e) = pm_clone.restart() {
+                            log::error!("托盘重启本地引擎失败: {}", e);
+                        } else {
+                            log::info!("托盘重启本地引擎成功");
+                        }
+                    });
                 }
             }
             "quit" => {

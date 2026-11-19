@@ -23,11 +23,14 @@ class OutlineService:
         self.config_service = get_config_service()
         # 加载完整文本配置（保留多服务商信息，便于按能力回退）
         self.text_config = self.config_service.load_text_providers_config()
-        # 启动时校验至少有一个可用服务商
-        self._get_client()
+        # 启动时校验服务商（未配置时安全忽略，不阻断服务启动）
+        try:
+            self._get_client()
+            logger.info(f"OutlineService 初始化完成，使用服务商: {self.text_config.get('active_provider')}")
+        except Exception as e:
+            logger.warning(f"OutlineService 暂未配置有效服务商: {e}")
         self.prompt_template = self._load_prompt_template()
         self.image_suggestion_prompt_template = self._load_image_suggestion_prompt_template()
-        logger.info(f"OutlineService 初始化完成，使用服务商: {self.text_config.get('active_provider')}")
 
     def _is_provider_usable(self, provider_config: Dict[str, Any]) -> bool:
         """检查服务商配置是否可用（主要是 API Key）"""

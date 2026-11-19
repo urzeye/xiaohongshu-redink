@@ -53,7 +53,12 @@ pub fn get_platform_info() -> PlatformInfo {
 
 fn open_directory(path: &Path) -> Result<(), String> {
     if !path.exists() {
-        let _ = std::fs::create_dir_all(path);
+        std::fs::create_dir_all(path)
+            .map_err(|e| format!("创建目录失败 ({:?}): {}", path, e))?;
+    }
+
+    if !path.exists() {
+        return Err(format!("目录不存在且无法自动创建: {:?}", path));
     }
 
     #[cfg(target_os = "windows")]
@@ -67,18 +72,24 @@ fn open_directory(path: &Path) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("open")
+        let status = Command::new("open")
             .arg(path)
-            .spawn()
-            .map_err(|e| format!("打开目录失败: {}", e))?;
+            .status()
+            .map_err(|e| format!("调用 open 打开目录失败: {}", e))?;
+        if !status.success() {
+            return Err(format!("打开目录失败，系统退出码: {:?}", status.code()));
+        }
     }
 
     #[cfg(target_os = "linux")]
     {
-        Command::new("xdg-open")
+        let status = Command::new("xdg-open")
             .arg(path)
-            .spawn()
-            .map_err(|e| format!("打开目录失败: {}", e))?;
+            .status()
+            .map_err(|e| format!("调用 xdg-open 打开目录失败: {}", e))?;
+        if !status.success() {
+            return Err(format!("打开目录失败，系统退出码: {:?}", status.code()));
+        }
     }
 
     Ok(())
