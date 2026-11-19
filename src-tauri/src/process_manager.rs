@@ -24,6 +24,7 @@ pub struct PythonInterpreter {
 #[derive(Clone)]
 pub struct ProcessManager {
     child: Arc<Mutex<Option<Child>>>,
+    last_error: Arc<Mutex<Option<String>>>,
     project_root: PathBuf,
     host: String,
     port: u16,
@@ -36,10 +37,38 @@ impl ProcessManager {
 
         Self {
             child: Arc::new(Mutex::new(None)),
+            last_error: Arc::new(Mutex::new(None)),
             project_root,
             host,
             port,
         }
+    }
+
+    /// 获取增强型 PATH 环境变量（补全 macOS/Linux 从 GUI 启动时缺失的终端常用路径）
+    pub fn get_enhanced_path() -> String {
+        let current_path = std::env::var("PATH").unwrap_or_default();
+        #[cfg(not(target_os = "windows"))]
+        {
+            if let Some(home) = Self::get_user_home() {
+                let extra_paths = [
+                    home.join(".local").join("bin"),
+                    home.join(".cargo").join("bin"),
+                    home.join(".local").join("share").join("mise").join("shims"),
+                    PathBuf::from("/opt/homebrew/bin"),
+                    PathBuf::from("/usr/local/bin"),
+                ];
+                let mut path_elements: Vec<String> = extra_paths
+                    .iter()
+                    .filter(|p| p.exists() && !current_path.contains(&p.to_string_lossy().to_string()))
+                    .map(|p| p.to_string_lossy().to_string())
+                    .collect();
+                if !path_elements.is_empty() {
+                    path_elements.push(current_path);
+                    return path_elements.join(":");
+                }
+            }
+        }
+        current_path
     }
 
     pub fn get_user_home() -> Option<PathBuf> {
@@ -87,6 +116,9 @@ impl ProcessManager {
                     // macOS app bundle: Contents/Resources
                     if exe.join("Resources").join("backend").join("app.py").exists() {
                         return exe.join("Resources");
+                    }
+                    if exe.join("resources").join("backend").join("app.py").exists() {
+                        return exe.join("resources");
                     }
                 } else {
                     break;
@@ -224,7 +256,27 @@ impl ProcessManager {
             });
         }
 
-        // 4. 检查系统是否安装了 uv
+        // 4. 检查常见安装路径下的 uv
+        #[cfg(not(target_os = "windows"))]
+        if let Some(home) = Self::get_user_home() {
+            let direct_uvs = [
+                home.join(".local").join("bin").join("uv"),
+                home.join(".cargo").join("bin").join("uv"),
+                PathBuf::from("/opt/homebrew/bin/uv"),
+                PathBuf::from("/usr/local/bin/uv"),
+            ];
+            for uv_path in direct_uvs {
+                if uv_path.exists() {
+                    info!("Found uv at direct path: {:?}", uv_path);
+                    return Ok(PythonInterpreter {
+                        path: uv_path,
+                        is_uv: true,
+                    });
+                }
+            }
+        }
+
+        // 5. 检查系统 PATH 中是否安装了 uv
         if Self::check_command_exists("uv") {
             info!("Found uv in PATH, will use `uv run python`");
             return Ok(PythonInterpreter {
@@ -233,7 +285,7 @@ impl ProcessManager {
             });
         }
 
-        // 5. 检查系统 PATH 中的 python3 / python
+        // 6. 检查系统 PATH 中的 python3 / python
         #[cfg(not(target_os = "windows"))]
         if Self::check_command_exists("python3") {
             return Ok(PythonInterpreter {
@@ -266,6 +318,7 @@ impl ProcessManager {
         let mut test_cmd = {
             let mut c = Command::new("which");
             c.arg(cmd);
+            c.env("PATH", Self::get_enhanced_path());
             c
         };
 
@@ -299,18 +352,35 @@ impl ProcessManager {
             "本地后端引擎未启动".to_string()
         };
 
+        let error = {
+            let lock = self.last_error.lock().unwrap();
+            lock.clone()
+        };
+
         BackendStatus {
             is_running: running,
             host: self.host.clone(),
             port: self.port,
             pid,
             message,
-            error: None,
+            error,
         }
     }
 
     /// 启动 Python 后端服务（无终端黑框）
     pub fn start(&self) -> Result<(), String> {
+        let res = self.start_inner();
+        if let Err(ref e) = res {
+            let mut lock = self.last_error.lock().unwrap();
+            *lock = Some(e.clone());
+        } else {
+            let mut lock = self.last_error.lock().unwrap();
+            *lock = None;
+        }
+        res
+    }
+
+    fn start_inner(&self) -> Result<(), String> {
         // 如果服务已经在健康运行，则直接复用
         if Self::check_health(&self.host, self.port) {
             info!("Backend already responding on {}:{}, skipping spawn", self.host, self.port);
@@ -336,13 +406,27 @@ impl ProcessManager {
             c
         };
 
+        let data_dir = self.get_data_dir();
+        let logs_dir = self.get_logs_dir();
+        let _ = std::fs::create_dir_all(&data_dir);
+        let _ = std::fs::create_dir_all(&logs_dir);
+
         cmd.current_dir(&self.project_root);
+        cmd.env("PATH", Self::get_enhanced_path());
         cmd.env("PYTHONUNBUFFERED", "1");
         cmd.env("REDINK_ROOT", &self.project_root);
+        cmd.env("REDINK_DATA_DIR", &data_dir);
+        cmd.env("REDINK_LOGS_DIR", &logs_dir);
         cmd.env("REDINK_HOST", &self.host);
         cmd.env("REDINK_PORT", self.port.to_string());
         cmd.env("REDINK_DEBUG", "0");
         cmd.env("APP_ENV", "production");
+
+        // 当运行于 macOS app bundle 只读资源目录时，重定向虚拟环境至用户数据目录
+        if self.project_root.to_string_lossy().contains(".app/Contents") {
+            let venv_dir = data_dir.join(".venv");
+            cmd.env("UV_PROJECT_ENVIRONMENT", &venv_dir);
+        }
 
         #[cfg(target_os = "windows")]
         {

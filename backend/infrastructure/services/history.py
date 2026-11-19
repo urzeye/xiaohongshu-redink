@@ -94,10 +94,14 @@ class HistoryService:
         logger.info(f"历史记录服务初始化，存储模式: {self.storage_mode}")
 
         # 本地存储相关配置
-        self.history_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-            "history"
-        )
+        data_dir_env = os.getenv("REDINK_DATA_DIR")
+        if data_dir_env:
+            self.history_dir = os.path.join(data_dir_env, "history")
+        else:
+            self.history_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "history"
+            )
 
         if self.storage_mode == STORAGE_MODE_LOCAL:
             os.makedirs(self.history_dir, exist_ok=True)

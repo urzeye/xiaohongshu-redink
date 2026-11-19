@@ -20,12 +20,21 @@ DB_URL_FALLBACK_ENV = "DATABASE_URL"
 
 def _project_root() -> Path:
     """获取项目根目录。"""
+    custom_root = os.getenv("REDINK_ROOT")
+    if custom_root:
+        return Path(custom_root)
     return Path(__file__).resolve().parents[3]
 
 
 def _default_sqlite_url() -> str:
     """生成默认 SQLite 连接串。"""
-    db_file = _project_root() / "data" / "redink.db"
+    data_dir_env = os.getenv("REDINK_DATA_DIR")
+    if data_dir_env:
+        data_dir = Path(data_dir_env)
+    else:
+        data_dir = _project_root() / "data"
+
+    db_file = data_dir / "redink.db"
     db_file.parent.mkdir(parents=True, exist_ok=True)
     return f"sqlite:///{db_file.as_posix()}"
 

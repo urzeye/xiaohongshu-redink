@@ -53,6 +53,13 @@
         <p class="security-hint">
           {{ desktopStatus?.message || "本地后端与小红书自动化发布网关正在后台受控运行。" }}
         </p>
+        <p
+          v-if="!desktopStatus?.is_running && desktopStatus?.error"
+          class="security-hint text-error"
+          style="color: #ef4444; margin-top: 6px; font-family: monospace; font-size: 13px;"
+        >
+          故障详情：{{ desktopStatus.error }}
+        </p>
 
         <div class="token-actions" style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
           <button
