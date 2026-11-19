@@ -1,6 +1,6 @@
 {
   "name": "redink-desktop",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "RedInk · 小红书 AI 爆款创作与本地安全发布引擎 (跨平台桌面客户端)",
   "private": true,
   "scripts": {
