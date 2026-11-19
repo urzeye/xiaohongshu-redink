@@ -32,6 +32,7 @@
     "targets": "all",
     "resources": {
       "../backend/": "backend/",
+      "../tools/": "tools/",
       "../data/template.json": "data/template.json",
       "../pyproject.toml": "pyproject.toml",
       "../alembic.ini": "alembic.ini",

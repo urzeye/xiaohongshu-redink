@@ -498,7 +498,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { getKnowledgeVisualStyles, getAccessToken } from "../api";
+import { getKnowledgeVisualStyles, getAccessToken, withAccessToken } from "../api";
 
 // State
 const articleText = ref("");
@@ -704,8 +704,8 @@ const handlePipelineEvent = (event: any) => {
             ...event.result,
             status: event.result.success ? "done" : "error",
             url: event.result.output_path
-              ? `/${event.result.output_path}`
-              : event.result.url,
+              ? withAccessToken(`/${event.result.output_path}`)
+              : withAccessToken(event.result.url || ""),
           };
           if (event.result.success) {
             generateProgress.value.success++;

@@ -73,11 +73,15 @@ class ImageService:
         self.prompt_template = self._load_prompt_template()
         self.prompt_template_short = self._load_prompt_template(short=True)
 
-        # 历史记录根目录（本地模式使用）
-        self.history_root_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-            "history"
-        )
+        # 历史记录根目录（本地模式使用，优先读取 REDINK_DATA_DIR 解耦目录）
+        data_dir_env = os.getenv("REDINK_DATA_DIR")
+        if data_dir_env:
+            self.history_root_dir = os.path.join(data_dir_env, "history")
+        else:
+            self.history_root_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "history"
+            )
         if self.storage_mode == STORAGE_MODE_LOCAL:
             os.makedirs(self.history_root_dir, exist_ok=True)
 
@@ -1052,7 +1056,17 @@ class ImageService:
             from backend.utils.supabase_client import get_image_url
             return get_image_url(task_id, filename)
         task_dir = os.path.join(self.history_root_dir, task_id)
-        return os.path.join(task_dir, filename)
+        candidate = os.path.join(task_dir, filename)
+        if not os.path.exists(candidate):
+            # 兼容回退：尝试从项目根目录历史文件夹查找
+            project_history = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "history"
+            )
+            fallback = os.path.join(project_history, task_id, filename)
+            if os.path.exists(fallback):
+                return fallback
+        return candidate
 
     def get_task_state(self, task_id: str) -> Optional[Dict]:
         """获取任务状态"""

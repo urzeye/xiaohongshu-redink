@@ -43,11 +43,12 @@ class ConceptHistoryService:
         """初始化概念历史记录服务"""
         self.storage_mode = os.getenv("CONCEPT_HISTORY_STORAGE_MODE", STORAGE_MODE_LOCAL)
 
-        # 项目根目录
-        project_root = Path(__file__).parent.parent.parent.parent
+        # 项目根目录与数据目录
+        project_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).parent.parent.parent.parent)
+        data_dir = Path(os.getenv("REDINK_DATA_DIR")) if os.getenv("REDINK_DATA_DIR") else project_root / "data"
 
         # 概念历史记录存储目录（数据库模式仅保留路径，不强制落盘）
-        self.history_dir = project_root / "history" / "concepts"
+        self.history_dir = data_dir / "history" / "concepts" if os.getenv("REDINK_DATA_DIR") else project_root / "history" / "concepts"
         self.index_file = self.history_dir / "index.json"
         if self.storage_mode == STORAGE_MODE_LOCAL:
             self.history_dir.mkdir(parents=True, exist_ok=True)
@@ -344,8 +345,11 @@ class ConceptHistoryService:
         # 删除关联的图片目录
         if record.get("task_id"):
             task_id = record["task_id"]
-            project_root = Path(__file__).parent.parent.parent.parent
-            task_dir = project_root / "output" / "concepts" / task_id
+            project_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).parent.parent.parent.parent)
+            out_dir = Path(os.getenv("REDINK_DATA_DIR")) / "output" if os.getenv("REDINK_DATA_DIR") else project_root / "output"
+            task_dir = out_dir / "concepts" / task_id
+            if not task_dir.exists() and (project_root / "output" / "concepts" / task_id).exists():
+                task_dir = project_root / "output" / "concepts" / task_id
             if task_dir.exists() and task_dir.is_dir():
                 try:
                     shutil.rmtree(task_dir)
@@ -489,8 +493,11 @@ class ConceptHistoryService:
             return False
 
         # 查找图片目录
-        project_root = Path(__file__).parent.parent.parent.parent
-        task_dir = project_root / "output" / "concepts" / task_id
+        project_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).parent.parent.parent.parent)
+        out_dir = Path(os.getenv("REDINK_DATA_DIR")) / "output" if os.getenv("REDINK_DATA_DIR") else project_root / "output"
+        task_dir = out_dir / "concepts" / task_id
+        if not task_dir.exists() and (project_root / "output" / "concepts" / task_id).exists():
+            task_dir = project_root / "output" / "concepts" / task_id
 
         if not task_dir.exists():
             logger.warning(f"图片目录不存在: {task_dir}")

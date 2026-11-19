@@ -227,6 +227,14 @@ impl ProcessManager {
         self.project_root.clone()
     }
 
+    pub fn get_port(&self) -> u16 {
+        self.port
+    }
+
+    pub fn get_host(&self) -> String {
+        self.host.clone()
+    }
+
     pub fn resolve_data_dir(project_root: &PathBuf) -> PathBuf {
         // 如果项目根目录有效存在且不是系统根目录 /，且处于开发目录模式
         if project_root != &PathBuf::from("/") && project_root.join("backend").join("app.py").exists() {

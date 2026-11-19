@@ -148,6 +148,8 @@ class AppSettings:
         debug = _to_bool(os.getenv("REDINK_DEBUG"), default=True)
         log_level = (os.getenv("REDINK_LOG_LEVEL") or ("DEBUG" if debug else "INFO")).upper()
 
+        output_dir = Path(os.getenv("REDINK_DATA_DIR")) / "output" if os.getenv("REDINK_DATA_DIR") else project_root / "output"
+
         return cls(
             app_name=(os.getenv("REDINK_APP_NAME") or default_app_name).strip(),
             app_version=(os.getenv("REDINK_APP_VERSION") or default_app_version).strip(),
@@ -162,7 +164,7 @@ class AppSettings:
             rate_limit_storage_uri=(os.getenv("REDINK_RATE_LIMIT_STORAGE_URI") or "memory://").strip(),
             project_root=project_root,
             frontend_dist=project_root / "frontend" / "dist",
-            output_dir=project_root / "output",
+            output_dir=output_dir,
             logs_dir=logs_dir,
             data_dir=data_dir,
         )

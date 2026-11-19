@@ -29,8 +29,9 @@ class PublishService:
 
     def __init__(self, gateway: PublishGatewayPort | None = None):
         self.gateway = gateway or get_publish_gateway()
-        self.project_root = Path(__file__).resolve().parents[3]
-        self.history_root_dir = self.project_root / "history"
+        self.project_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).resolve().parents[3])
+        data_dir_env = os.getenv("REDINK_DATA_DIR")
+        self.history_root_dir = Path(data_dir_env) / "history" if data_dir_env else self.project_root / "history"
 
     @staticmethod
     def _path_exists(path: str) -> bool:
@@ -77,6 +78,21 @@ class PublishService:
                 if thumb_path.exists():
                     logger.warning(f"发布原图缺失，回退缩略图: {raw}")
                     return str(thumb_path)
+
+            # 兼容回退：尝试从项目根目录历史文件夹查找
+            proj_history = self.project_root / "history"
+            if proj_history != self.history_root_dir:
+                proj_image = proj_history / task_id / filename
+                if proj_image.exists():
+                    return str(proj_image)
+                if filename.startswith("thumb_"):
+                    proj_orig = proj_history / task_id / filename[len("thumb_"):]
+                    if proj_orig.exists():
+                        return str(proj_orig)
+                else:
+                    proj_thumb = proj_history / task_id / f"thumb_{filename}"
+                    if proj_thumb.exists():
+                        return str(proj_thumb)
 
             return str(image_path)
 

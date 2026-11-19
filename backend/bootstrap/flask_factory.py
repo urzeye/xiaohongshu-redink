@@ -119,6 +119,14 @@ def _register_output_route(app: Flask, output_dir: Path) -> None:
 
     @app.route("/output/<path:filename>")
     def _serve_output(filename):
+        target = output_dir / filename
+        if target.is_file():
+            return send_from_directory(str(output_dir), filename)
+        # 兼容回退：若在主输出目录不存在，尝试从项目根目录 output 目录加载
+        proj_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).resolve().parents[2])
+        proj_output = proj_root / "output"
+        if proj_output != output_dir and (proj_output / filename).is_file():
+            return send_from_directory(str(proj_output), filename)
         return send_from_directory(str(output_dir), filename)
 
 

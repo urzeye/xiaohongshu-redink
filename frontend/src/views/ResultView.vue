@@ -61,6 +61,27 @@
           一键下载
         </button>
         <button
+          v-if="isTauri"
+          class="btn btn-secondary"
+          @click="openLocalFolder"
+          title="在文件资源管理器中打开当前生成的图片目录"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="margin-right: 6px"
+          >
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          打开文件夹
+        </button>
+        <button
           class="btn btn-primary"
           @click="goToPublish"
           :disabled="!canPublish"
@@ -633,6 +654,17 @@ import {
 import ContentDisplay from "../components/result/ContentDisplay.vue";
 import CreationStepper from "../components/home/CreationStepper.vue";
 import { useMessage } from "naive-ui";
+import { isTauriEnvironment, openHistoryFolder } from "../utils/tauri";
+
+const isTauri = ref(isTauriEnvironment());
+
+async function openLocalFolder() {
+  try {
+    await openHistoryFolder(store.taskId || undefined);
+  } catch (e: any) {
+    message.error("打开本地文件夹失败: " + (e?.message || e));
+  }
+}
 
 const router = useRouter();
 const route = useRoute();

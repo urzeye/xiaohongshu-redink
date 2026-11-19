@@ -1,5 +1,15 @@
 import axios from 'axios'
 
+const appStartTime = Date.now()
+let dynamicPort = 12398
+
+export function updateBackendPort(port: number) {
+  if (port && port > 0 && port !== dynamicPort) {
+    dynamicPort = port
+    API_BASE_URL = getApiBaseUrl()
+  }
+}
+
 export function isTauriEnvironment(): boolean {
   if (typeof window === 'undefined') return false
   return Boolean(
@@ -14,7 +24,7 @@ export function getApiBaseUrl(): string {
   const envBase = (import.meta as any).env?.VITE_API_BASE_URL
   if (envBase) return String(envBase).replace(/\/+$/, '')
   if (isTauriEnvironment()) {
-    return 'http://127.0.0.1:12398/api'
+    return `http://127.0.0.1:${dynamicPort}/api`
   }
   return '/api'
 }
@@ -23,20 +33,23 @@ export function getBackendBaseUrl(): string {
   const envBase = (import.meta as any).env?.VITE_BACKEND_URL
   if (envBase) return String(envBase).replace(/\/+$/, '')
   if (isTauriEnvironment()) {
-    return 'http://127.0.0.1:12398'
+    return `http://127.0.0.1:${dynamicPort}`
   }
   return ''
 }
 
-export const API_BASE_URL = getApiBaseUrl()
+export let API_BASE_URL = getApiBaseUrl()
 const ACCESS_TOKEN_KEY = 'redink_access_token'
 
 let accessToken = localStorage.getItem(ACCESS_TOKEN_KEY) || ''
 
-if (isTauriEnvironment() && !accessToken && typeof window !== 'undefined') {
+if (isTauriEnvironment() && typeof window !== 'undefined') {
   import('@tauri-apps/api/core')
     .then(({ invoke }) => invoke<any>('get_platform_info'))
     .then((info) => {
+      if (info?.port) {
+        updateBackendPort(info.port)
+      }
       if (info?.auth_token && !accessToken) {
         setAccessToken(info.auth_token)
       }
@@ -165,7 +178,10 @@ function handleAxiosError(error: any, defaultMessage: string, defaultReturn: any
       return { success: false, ...defaultReturn, error: '请求超时，请检查网络连接' }
     }
     if (!error.response) {
-      return { success: false, ...defaultReturn, error: '网络连接失败，请检查网络设置' }
+      if (isTauriEnvironment() && (Date.now() - appStartTime < 15000)) {
+        return { success: false, ...defaultReturn, error: '本地创作引擎正在初始化唤醒中，请稍候 3~5 秒后重试...' }
+      }
+      return { success: false, ...defaultReturn, error: '网络连接失败，请检查本地后端是否启动' }
     }
     if (error.response.status === 404) {
       return { success: false, ...defaultReturn, error: '资源不存在' }

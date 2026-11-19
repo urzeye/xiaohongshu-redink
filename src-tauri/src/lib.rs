@@ -50,6 +50,7 @@ pub fn run() {
             commands::restart_backend,
             commands::open_data_folder,
             commands::open_logs_folder,
+            commands::open_history_folder,
             commands::open_external_url,
             commands::get_platform_info,
         ])

@@ -1,4 +1,4 @@
-import { isTauriEnvironment } from '../api';
+import { isTauriEnvironment, updateBackendPort } from '../api';
 
 export interface BackendStatus {
   is_running: boolean;
@@ -15,6 +15,8 @@ export interface PlatformInfo {
   version: string;
   app_name: string;
   auth_token?: string | null;
+  port?: number;
+  host?: string;
 }
 
 export { isTauriEnvironment };
@@ -23,7 +25,11 @@ export async function getBackendStatus(): Promise<BackendStatus | null> {
   if (!isTauriEnvironment()) return null;
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    return await invoke<BackendStatus>('get_backend_status');
+    const status = await invoke<BackendStatus>('get_backend_status');
+    if (status?.port) {
+      updateBackendPort(status.port);
+    }
+    return status;
   } catch (e) {
     console.error('Failed to get backend status from Tauri:', e);
     return null;
@@ -34,7 +40,11 @@ export async function restartBackend(): Promise<BackendStatus | null> {
   if (!isTauriEnvironment()) return null;
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    return await invoke<BackendStatus>('restart_backend');
+    const status = await invoke<BackendStatus>('restart_backend');
+    if (status?.port) {
+      updateBackendPort(status.port);
+    }
+    return status;
   } catch (e) {
     console.error('Failed to restart backend via Tauri:', e);
     throw e;
@@ -51,6 +61,12 @@ export async function openLogsFolder(): Promise<void> {
   if (!isTauriEnvironment()) return;
   const { invoke } = await import('@tauri-apps/api/core');
   await invoke('open_logs_folder');
+}
+
+export async function openHistoryFolder(taskId?: string): Promise<void> {
+  if (!isTauriEnvironment()) return;
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('open_history_folder', { taskId: taskId || null });
 }
 
 export async function openExternalUrl(url: string): Promise<void> {
@@ -70,7 +86,11 @@ export async function getPlatformInfo(): Promise<PlatformInfo | null> {
   if (!isTauriEnvironment()) return null;
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    return await invoke<PlatformInfo>('get_platform_info');
+    const info = await invoke<PlatformInfo>('get_platform_info');
+    if (info?.port) {
+      updateBackendPort(info.port);
+    }
+    return info;
   } catch (e) {
     return null;
   }

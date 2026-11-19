@@ -12,6 +12,8 @@ pub struct PlatformInfo {
     pub version: String,
     pub app_name: String,
     pub auth_token: Option<String>,
+    pub port: u16,
+    pub host: String,
 }
 
 #[tauri::command]
@@ -38,12 +40,45 @@ pub fn open_logs_folder(pm: State<ProcessManager>) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn open_history_folder(pm: State<ProcessManager>, task_id: Option<String>) -> Result<(), String> {
+    let base_data_history = pm.get_data_dir().join("history");
+    let base_project_history = pm.get_project_root().join("history");
+
+    let target_dir = if let Some(ref tid) = task_id {
+        let tid = tid.trim();
+        if !tid.is_empty() {
+            let data_task_dir = base_data_history.join(tid);
+            let proj_task_dir = base_project_history.join(tid);
+            if data_task_dir.exists() {
+                data_task_dir
+            } else if proj_task_dir.exists() {
+                proj_task_dir
+            } else if base_data_history.exists() {
+                base_data_history
+            } else {
+                base_project_history
+            }
+        } else if base_data_history.exists() {
+            base_data_history
+        } else {
+            base_project_history
+        }
+    } else if base_data_history.exists() {
+        base_data_history
+    } else {
+        base_project_history
+    };
+
+    open_directory(&target_dir)
+}
+
+#[tauri::command]
 pub fn open_external_url(url: String) -> Result<(), String> {
     open_url(&url)
 }
 
 #[tauri::command]
-pub fn get_platform_info() -> PlatformInfo {
+pub fn get_platform_info(pm: State<ProcessManager>) -> PlatformInfo {
     let auth_token = std::env::var("REDINK_AUTH_TOKEN")
         .ok()
         .filter(|s| !s.trim().is_empty());
@@ -53,6 +88,8 @@ pub fn get_platform_info() -> PlatformInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         app_name: env!("CARGO_PKG_NAME").to_string(),
         auth_token,
+        port: pm.get_port(),
+        host: pm.get_host(),
     }
 }
 

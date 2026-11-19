@@ -288,7 +288,7 @@
                 @click="openLightbox(Number(idx))"
               >
                 <img
-                  :src="`/${img.output_path}`"
+                  :src="withAccessToken('/' + img.output_path)"
                   :alt="`概念图 ${Number(idx) + 1}`"
                 />
                 <div class="image-overlay">
@@ -420,7 +420,7 @@
       <div class="lightbox-content">
         <img
           v-if="currentLightboxImage"
-          :src="`/${currentLightboxImage.output_path}`"
+          :src="withAccessToken('/' + currentLightboxImage.output_path)"
           :alt="`概念图 ${lightboxIndex + 1}`"
         />
         <div class="lightbox-info">
@@ -460,6 +460,7 @@ import {
   getConceptHistoryList,
   getConceptHistory,
   deleteConceptHistory,
+  withAccessToken,
   type ConceptHistoryRecord,
   type ConceptHistoryDetail,
 } from "../api";

@@ -114,16 +114,22 @@ def create_image_blueprint():
 
                 return redirect(url)
 
-            # 本地模式：从文件系统读取
-            history_root = os.path.join(
+            # 本地模式：优先从 REDINK_DATA_DIR / history 读取，其次从源码根目录读取
+            data_dir_env = os.getenv("REDINK_DATA_DIR")
+            project_history = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                 "history"
             )
+            history_root = os.path.join(data_dir_env, "history") if data_dir_env else project_history
 
             if thumbnail:
                 # 尝试返回缩略图
                 thumb_filename = safe_filename if safe_filename.startswith('thumb_') else f"thumb_{safe_filename}"
                 thumb_filepath = _safe_join(history_root, safe_task_id, thumb_filename)
+                if (not os.path.exists(thumb_filepath) or os.path.getsize(thumb_filepath) == 0) and project_history != history_root:
+                    fallback_thumb = _safe_join(project_history, safe_task_id, thumb_filename)
+                    if os.path.exists(fallback_thumb) and os.path.getsize(fallback_thumb) > 0:
+                        thumb_filepath = fallback_thumb
 
                 # 只有缩略图存在且非空时才返回，避免返回损坏/空文件
                 if os.path.exists(thumb_filepath) and os.path.getsize(thumb_filepath) > 0:
@@ -131,6 +137,10 @@ def create_image_blueprint():
 
             # 返回原图
             filepath = _safe_join(history_root, safe_task_id, safe_filename)
+            if not os.path.exists(filepath) and project_history != history_root:
+                fallback_file = _safe_join(project_history, safe_task_id, safe_filename)
+                if os.path.exists(fallback_file):
+                    filepath = fallback_file
 
             if not os.path.exists(filepath):
                 return json_response({

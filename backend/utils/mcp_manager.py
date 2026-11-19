@@ -26,18 +26,20 @@ logger = logging.getLogger(__name__)
 
 class MCPManager:
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent
+        self.project_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).resolve().parents[2])
 
-        # Windows must execute .exe; executing a bash wrapper can trigger WinError 193.
-        default_binary_path = self.project_root / "tools" / "xiaohongshu-mcp" / "xiaohongshu-mcp"
-        windows_binary_path = default_binary_path.with_suffix(".exe")
-        if os.name == "nt":
-            self.binary_path = windows_binary_path
-        else:
-            self.binary_path = default_binary_path
+        # Candidate search for binary (support dev workspace, bundled resources, data dir)
+        binary_name = "xiaohongshu-mcp.exe" if os.name == "nt" else "xiaohongshu-mcp"
+        candidate_paths = [
+            self.project_root / "tools" / "xiaohongshu-mcp" / binary_name,
+            Path(__file__).resolve().parents[2] / "tools" / "xiaohongshu-mcp" / binary_name,
+            self.project_root / "resources" / "tools" / "xiaohongshu-mcp" / binary_name,
+        ]
+        self.binary_path = next((p for p in candidate_paths if p.exists()), candidate_paths[0])
 
-        self.data_dir = self.project_root / "data" / "xiaohongshu"
-        self.logs_dir = self.project_root / "logs"
+        data_root = Path(os.getenv("REDINK_DATA_DIR")) if os.getenv("REDINK_DATA_DIR") else self.project_root / "data"
+        self.data_dir = data_root / "xiaohongshu"
+        self.logs_dir = Path(os.getenv("REDINK_LOGS_DIR")) if os.getenv("REDINK_LOGS_DIR") else self.project_root / "logs"
         self.install_script = self.project_root / "scripts" / "install-tools.sh"
         configured_mcp_url = os.getenv("XHS_MCP_URL") or os.getenv("MCP_URL")
         self.mcp_url = (configured_mcp_url or "http://127.0.0.1:18060").rstrip("/")
@@ -91,6 +93,18 @@ class MCPManager:
 
         logger.info(f"Starting xiaohongshu-mcp: {self.binary_path}")
         try:
+            # Sync cookies from project root if not already in decoupled data_dir
+            root_cookies = self.project_root / "cookies.json"
+            data_cookies = self.data_dir / "cookies.json"
+            if root_cookies.exists() and not data_cookies.exists():
+                try:
+                    shutil.copyfile(root_cookies, data_cookies)
+                except Exception:
+                    pass
+
+            env = os.environ.copy()
+            env["COOKIES_PATH"] = str(data_cookies)
+
             with open(log_file, "a", encoding="utf-8", errors="ignore") as f:
                 self.process = subprocess.Popen(
                     [
@@ -101,6 +115,7 @@ class MCPManager:
                     stdout=f,
                     stderr=subprocess.STDOUT,
                     cwd=str(self.project_root),
+                    env=env,
                 )
 
             for _ in range(timeout):
