@@ -40,20 +40,45 @@ def _configure_cors(app: Flask, settings: AppSettings, logger: logging.Logger) -
         logger.warning("[WARN] flask-cors 未安装，已跳过 CORS 配置")
         return
 
+    allowed_origin_patterns = [
+        r"^https?://(tauri\.localhost|localhost|127\.0\.0\.1)(:\d+)?$",
+        r"^tauri://localhost$",
+    ]
+    all_origins = list(dict.fromkeys(settings.cors_origins + allowed_origin_patterns))
+
     CORS(
         app,
         resources={
             r"/api/*": {
-                "origins": settings.cors_origins,
-                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization", "X-Request-ID"],
+                "origins": all_origins,
+                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+                "allow_headers": ["Content-Type", "Authorization", "X-Request-ID", "*"],
             },
             r"/output/*": {
-                "origins": settings.cors_origins,
+                "origins": all_origins,
                 "methods": ["GET", "OPTIONS"],
             },
         },
+        supports_credentials=True,
     )
+
+    @app.after_request
+    def _add_cors_fallback(response):
+        origin = request.headers.get("Origin")
+        if origin:
+            is_desktop_or_local = (
+                origin in ("tauri://localhost", "http://tauri.localhost", "https://tauri.localhost")
+                or "://localhost" in origin
+                or "://127.0.0.1" in origin
+                or origin in settings.cors_origins
+                or "*" in settings.cors_origins
+            )
+            if is_desktop_or_local and "Access-Control-Allow-Origin" not in response.headers:
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Request-ID, *"
+        return response
 
 
 def _configure_auth_guard(app: Flask, logger: logging.Logger) -> None:
@@ -188,6 +213,9 @@ def _init_database_on_startup(logger: logging.Logger) -> None:
 
 def create_app(settings: AppSettings | None = None) -> Flask:
     """创建并装配 Flask 应用。"""
+    from .ssl_compat import ensure_ca_bundle
+    ensure_ca_bundle()
+
     runtime_settings = settings or AppSettings.from_env()
     logger = configure_logging(runtime_settings)
 

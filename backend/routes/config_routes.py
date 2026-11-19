@@ -181,6 +181,9 @@ def create_config_blueprint():
         - message: 测试结果消息
         """
         try:
+            from backend.bootstrap.ssl_compat import ensure_ca_bundle
+            ensure_ca_bundle()
+
             data = request.get_json(silent=True)
             if not isinstance(data, dict):
                 return json_response({"success": False, "error": "请求体必须为 JSON 对象"}, 400)
@@ -805,13 +808,13 @@ def _test_bing(config: dict) -> dict:
 
 def _check_response(result_text: str) -> dict:
     """检查响应是否符合预期"""
-    if "你好" in result_text and "RedInk" in result_text:
+    text = (result_text or "").strip()
+    if text:
         return {
             "success": True,
-            "message": f"连接成功！响应: {result_text[:100]}"
+            "message": f"连接成功！响应: {text[:100]}"
         }
-    else:
-        return {
-            "success": True,
-            "message": f"连接成功，但响应内容不符合预期: {result_text[:100]}"
-        }
+    return {
+        "success": False,
+        "error": "模型未返回任何内容"
+    }

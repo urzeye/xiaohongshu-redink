@@ -84,3 +84,18 @@ def test_auth_image_loopback_exemption(monkeypatch):
         environ_base={"REMOTE_ADDR": "127.0.0.1"}
     )
     assert res.status_code == 200
+
+
+def test_auth_desktop_tauri_origin_exemption(monkeypatch):
+    monkeypatch.setenv("REDINK_AUTH_TOKEN", "secret123")
+    app = create_test_app()
+    client = app.test_client()
+
+    # 本地 Tauri 桌面端未传 token 也能访问 API
+    for origin in ("http://tauri.localhost", "https://tauri.localhost", "tauri://localhost"):
+        res = client.post(
+            "/api/post_data",
+            headers={"Origin": origin},
+            environ_base={"REMOTE_ADDR": "127.0.0.1"}
+        )
+        assert res.status_code == 200

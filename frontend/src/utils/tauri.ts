@@ -14,6 +14,7 @@ export interface PlatformInfo {
   arch: string;
   version: string;
   app_name: string;
+  auth_token?: string | null;
 }
 
 export { isTauriEnvironment };

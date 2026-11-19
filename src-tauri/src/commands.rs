@@ -11,6 +11,7 @@ pub struct PlatformInfo {
     pub arch: String,
     pub version: String,
     pub app_name: String,
+    pub auth_token: Option<String>,
 }
 
 #[tauri::command]
@@ -43,11 +44,15 @@ pub fn open_external_url(url: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn get_platform_info() -> PlatformInfo {
+    let auth_token = std::env::var("REDINK_AUTH_TOKEN")
+        .ok()
+        .filter(|s| !s.trim().is_empty());
     PlatformInfo {
         os: std::env::consts::OS.to_string(),
         arch: std::env::consts::ARCH.to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         app_name: env!("CARGO_PKG_NAME").to_string(),
+        auth_token,
     }
 }
 

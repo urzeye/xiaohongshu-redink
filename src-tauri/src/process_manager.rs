@@ -1,6 +1,6 @@
 use log::{error, info, warn};
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -125,24 +125,44 @@ impl ProcessManager {
         }
     }
 
+    pub fn is_build_target_dir(path: &Path) -> bool {
+        for comp in path.components() {
+            let s = comp.as_os_str().to_string_lossy();
+            if s == "target" || s == "src-tauri" {
+                return true;
+            }
+        }
+        false
+    }
+
     /// 自动推断项目根目录路径（支持开发环境与跨平台打包安装环境）
     pub fn detect_project_root() -> PathBuf {
         // 1. 优先使用显式指定的环境变量
         if let Ok(env_root) = std::env::var("REDINK_ROOT") {
-            let p = PathBuf::from(env_root);
-            if p.join("backend").join("app.py").exists() {
-                return p;
+            let trimmed = env_root.trim();
+            if !trimmed.is_empty() {
+                let p = PathBuf::from(trimmed);
+                if p.is_absolute() && !Self::is_build_target_dir(&p) && p.join("backend").join("app.py").exists() {
+                    return p;
+                }
             }
         }
 
-        // 2. 检查当前工作目录（排除系统根目录 /）
+        // 2. 检查当前工作目录（排除系统根目录 / 以及 target 输出目录）
         if let Ok(cwd) = std::env::current_dir() {
             if cwd != PathBuf::from("/") {
-                if cwd.join("backend").join("app.py").exists() {
+                if Self::is_build_target_dir(&cwd) {
+                    for ancestor in cwd.ancestors() {
+                        if !Self::is_build_target_dir(ancestor)
+                            && ancestor.join("backend").join("app.py").exists()
+                        {
+                            return ancestor.to_path_buf();
+                        }
+                    }
+                } else if cwd.join("backend").join("app.py").exists() {
                     return cwd;
-                }
-                if let Some(parent) = cwd.parent() {
-                    if parent != PathBuf::from("/") && parent.join("backend").join("app.py").exists() {
+                } else if let Some(parent) = cwd.parent() {
+                    if !Self::is_build_target_dir(parent) && parent.join("backend").join("app.py").exists() {
                         return parent.to_path_buf();
                     }
                 }
@@ -151,17 +171,9 @@ impl ProcessManager {
 
         // 3. 检查当前可执行文件所在目录及其祖先目录
         if let Ok(exe) = std::env::current_exe() {
-            // 如果可执行文件位于 target/release 或 target/debug 等构建输出目录中，
-            // 向上寻找真实的工作区根目录（避免把 target/release 误当成项目根目录）
+            // 如果可执行文件位于 target 输出目录，跳过 target 及其内部所有子目录，向上寻找真实源码根目录
             for ancestor in exe.ancestors().skip(1) {
-                let name = ancestor.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-                if (name == "release" || name == "debug")
-                    && ancestor.parent().and_then(|p| p.file_name()).map(|n| n == "target").unwrap_or(false)
-                {
-                    // 在 target 构建输出目录中，继续往上找包含 pyproject.toml 的真实源码根目录
-                    continue;
-                }
-                if ancestor.file_name().map(|n| n == "target").unwrap_or(false) {
+                if Self::is_build_target_dir(ancestor) {
                     continue;
                 }
                 if ancestor.join("backend").join("app.py").exists() {
@@ -180,9 +192,12 @@ impl ProcessManager {
         // 4. 启发式探测用户主目录下的常见开发工作区（解决 macOS 从访达启动不继承终端环境变量的问题）
         if let Some(home) = Self::get_user_home() {
             let candidates = [
+                home.join("workspace").join("redink"),
                 home.join("workspace").join("xiaohongshu-redink"),
                 home.join("workspace").join("RedInk"),
+                home.join("Projects").join("redink"),
                 home.join("Projects").join("xiaohongshu-redink"),
+                home.join("Development").join("redink"),
                 home.join("Development").join("xiaohongshu-redink"),
             ];
             for cand in candidates {
@@ -193,9 +208,9 @@ impl ProcessManager {
             }
         }
 
-        // 5. 降级安全处理：避免降级到系统只读根目录 /
+        // 5. 降级安全处理：避免降级到系统只读根目录 / 或 target 目录
         if let Ok(cwd) = std::env::current_dir() {
-            if cwd != PathBuf::from("/") {
+            if cwd != PathBuf::from("/") && !Self::is_build_target_dir(&cwd) {
                 return cwd;
             }
         }
@@ -402,9 +417,20 @@ impl ProcessManager {
         test_cmd.output().map(|out| out.status.success()).unwrap_or(false)
     }
 
+    /// 将监听地址解析为可供本地客户端连接探测的有效 IP 地址
+    pub fn resolve_probe_host(host: &str) -> &str {
+        let trimmed = host.trim();
+        if trimmed == "0.0.0.0" || trimmed == "::" || trimmed.is_empty() {
+            "127.0.0.1"
+        } else {
+            trimmed
+        }
+    }
+
     /// 检测本地健康检查端点
     pub fn check_health(host: &str, port: u16) -> bool {
-        let url = format!("http://{}:{}/api/health", host, port);
+        let probe_host = Self::resolve_probe_host(host);
+        let url = format!("http://{}:{}/api/health", probe_host, port);
         match ureq::get(&url).timeout(Duration::from_millis(1500)).call() {
             Ok(resp) => resp.status() == 200,
             Err(_) => false,
@@ -444,6 +470,57 @@ impl ProcessManager {
         }
     }
 
+    /// 寻找系统或虚拟环境中可用的 CA 证书路径
+    pub fn find_ca_bundle(&self) -> Option<PathBuf> {
+        let candidates = [
+            self.project_root.join(".venv").join("Lib").join("site-packages").join("certifi").join("cacert.pem"),
+            self.project_root.join("runtime").join("Lib").join("site-packages").join("certifi").join("cacert.pem"),
+            self.project_root.join("venv").join("Lib").join("site-packages").join("certifi").join("cacert.pem"),
+        ];
+        for cand in &candidates {
+            if cand.is_file() {
+                return Some(cand.clone());
+            }
+        }
+        None
+    }
+
+    /// 强制终止占用指定端口的残留/僵尸进程
+    pub fn kill_process_on_port(port: u16) {
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            let mut netstat_cmd = Command::new("netstat");
+            netstat_cmd.args(["-ano", "-p", "tcp"]);
+            netstat_cmd.creation_flags(0x08000000);
+            if let Ok(output) = netstat_cmd.output() {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let port_suffix = format!(":{}", port);
+                for line in stdout.lines() {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 5 && parts[1].ends_with(&port_suffix) && parts[3] == "LISTENING" {
+                        if let Ok(pid) = parts[4].parse::<u32>() {
+                            if pid > 0 {
+                                info!("Found stale process on port {} (PID: {}), terminating...", port, pid);
+                                let mut kill_cmd = Command::new("taskkill");
+                                kill_cmd.args(["/F", "/T", "/PID", &pid.to_string()]);
+                                kill_cmd.creation_flags(0x08000000);
+                                let _ = kill_cmd.output();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            let mut kill_cmd = Command::new("sh");
+            kill_cmd.arg("-c").arg(format!("lsof -ti tcp:{} | xargs kill -9 2>/dev/null || true", port));
+            let _ = kill_cmd.output();
+        }
+    }
+
     /// 启动 Python 后端服务（无终端黑框）
     pub fn start(&self) -> Result<(), String> {
         let res = self.start_inner();
@@ -464,6 +541,9 @@ impl ProcessManager {
             return Ok(());
         }
 
+        // 启动前确保没有残留僵尸进程占用该端口
+        Self::kill_process_on_port(self.port);
+
         let python = self.find_python()?;
         let app_py = self.project_root.join("backend").join("app.py");
 
@@ -475,11 +555,14 @@ impl ProcessManager {
 
         let mut cmd = if python.is_uv {
             let mut c = Command::new(&python.path);
-            c.arg("run").arg("python").arg("backend/app.py");
+            c.arg("run").arg("--project").arg(&self.project_root).arg("python").arg("backend/app.py");
             c
         } else {
             let mut c = Command::new(&python.path);
             c.arg("backend/app.py");
+            if let Some(venv_dir) = python.path.parent().and_then(|p| p.parent()) {
+                c.env("VIRTUAL_ENV", venv_dir);
+            }
             c
         };
 
@@ -524,6 +607,14 @@ impl ProcessManager {
         cmd.env("REDINK_DEBUG", "0");
         cmd.env("APP_ENV", "production");
 
+        // 注入明确且经验证的 CA 证书路径，彻底防止 requests 报 CA bundle invalid
+        if let Some(ca) = self.find_ca_bundle() {
+            info!("Configuring TLS CA bundle: {:?}", ca);
+            cmd.env("SSL_CERT_FILE", &ca);
+            cmd.env("REQUESTS_CA_BUNDLE", &ca);
+            cmd.env("CURL_CA_BUNDLE", &ca);
+        }
+
         // 当运行于 macOS app bundle 只读资源目录时，重定向虚拟环境至用户数据目录
         if self.project_root.to_string_lossy().contains(".app/Contents") {
             let venv_dir = data_dir.join(".venv");
@@ -557,7 +648,8 @@ impl ProcessManager {
             std::thread::sleep(Duration::from_millis(600));
 
             if Self::check_health(&self.host, self.port) {
-                info!("Backend is ready and healthy at http://{}:{}", self.host, self.port);
+                let probe_host = Self::resolve_probe_host(&self.host);
+                info!("Backend is ready and healthy at http://{}:{}", probe_host, self.port);
                 return Ok(());
             }
 
@@ -589,24 +681,84 @@ impl ProcessManager {
         } else {
             String::new()
         };
-        Err(format!("等待服务启动超时（30秒内未在 {}:{} 探活成功）{}", self.host, self.port, detail))
+        let probe_host = Self::resolve_probe_host(&self.host);
+        Err(format!("等待服务启动超时（30秒内未在 {}:{} 探活成功）{}", probe_host, self.port, detail))
     }
 
     /// 停止 Python 后端子进程
     pub fn stop(&self) {
         let mut lock = self.child.lock().unwrap();
         if let Some(mut child) = lock.take() {
-            info!("Terminating Python backend PID: {}", child.id());
+            let pid = child.id();
+            info!("Terminating Python backend PID: {}", pid);
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::process::CommandExt;
+                let mut kill_cmd = Command::new("taskkill");
+                kill_cmd.args(["/F", "/T", "/PID", &pid.to_string()]);
+                kill_cmd.creation_flags(0x08000000);
+                let _ = kill_cmd.output();
+            }
             let _ = child.kill();
             let _ = child.wait();
             info!("Python backend terminated");
         }
+        Self::kill_process_on_port(self.port);
     }
 
     /// 重启服务
     pub fn restart(&self) -> Result<(), String> {
         self.stop();
-        std::thread::sleep(Duration::from_millis(800));
+        for _ in 0..10 {
+            if !Self::check_health(&self.host, self.port) {
+                break;
+            }
+            Self::kill_process_on_port(self.port);
+            std::thread::sleep(Duration::from_millis(300));
+        }
         self.start()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detection() {
+        let orig_cwd = std::env::current_dir().ok();
+        let root = ProcessManager::detect_project_root();
+        println!("DETECTED ROOT: {:?}", root);
+        assert!(!ProcessManager::is_build_target_dir(&root));
+        assert!(root.join("backend").join("app.py").exists());
+
+        let pm = ProcessManager::new("127.0.0.1".into(), 12398);
+        let py = pm.find_python();
+        println!("DETECTED PYTHON: {:?}", py);
+        assert!(py.is_ok());
+
+        let release_dir = PathBuf::from(r"D:\workspace\redink\src-tauri\target\release");
+        let _ = std::env::set_current_dir(&release_dir);
+        let root_from_release = ProcessManager::detect_project_root();
+        println!("DETECTED ROOT FROM RELEASE CWD: {:?}", root_from_release);
+        assert!(!ProcessManager::is_build_target_dir(&root_from_release));
+        assert_eq!(root, root_from_release);
+
+        let pm2 = ProcessManager::new("127.0.0.1".into(), 12398);
+        println!("DETECTED PYTHON FROM RELEASE: {:?}", pm2.find_python());
+        assert!(pm2.find_python().is_ok());
+
+        if let Some(orig) = orig_cwd {
+            let _ = std::env::set_current_dir(orig);
+        }
+    }
+
+    #[test]
+    fn test_probe_host() {
+        assert_eq!(ProcessManager::resolve_probe_host("0.0.0.0"), "127.0.0.1");
+        assert_eq!(ProcessManager::resolve_probe_host("::"), "127.0.0.1");
+        assert_eq!(ProcessManager::resolve_probe_host(""), "127.0.0.1");
+        assert_eq!(ProcessManager::resolve_probe_host("127.0.0.1"), "127.0.0.1");
+        assert_eq!(ProcessManager::resolve_probe_host("192.168.1.10"), "192.168.1.10");
     }
 }

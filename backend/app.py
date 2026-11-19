@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from backend.bootstrap.ssl_compat import ensure_ca_bundle
+ensure_ca_bundle()
+
 from backend.bootstrap import AppSettings, create_app as bootstrap_create_app
 
 

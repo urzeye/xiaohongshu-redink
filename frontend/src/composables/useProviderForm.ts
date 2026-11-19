@@ -240,7 +240,7 @@ function createProviderHandler(
   testing: Ref<boolean>,
   category: ProviderCategory,
   message: MessageApi,
-  autoSave: () => Promise<void>
+  autoSave: (notify?: boolean) => Promise<boolean>
 ) {
   const isImage = category === 'image'
   const isSearch = category === 'search'
@@ -250,7 +250,7 @@ function createProviderHandler(
     if (isSearch && config.value.providers[name]) {
       config.value.providers[name].enabled = true
     }
-    await autoSave()
+    await autoSave(false)
   }
 
   const openAdd = () => {
@@ -340,15 +340,17 @@ function createProviderHandler(
     }
 
     config.value.providers[name] = data
-    close()
-    await autoSave()
+    const ok = await autoSave(true)
+    if (ok) {
+      close()
+    }
   }
 
   const remove = async (name: string) => {
     if (!confirm(`确定要删除服务商 "${name}" 吗？`)) return
     delete config.value.providers[name]
     if (config.value.active_provider === name) config.value.active_provider = ''
-    await autoSave()
+    await autoSave(true)
   }
 
   const test = async () => {
@@ -501,7 +503,8 @@ export function useProviderForm() {
     }
   }
 
-  async function autoSaveConfig() {
+  async function autoSaveConfig(notify = false): Promise<boolean> {
+    saving.value = true
     try {
       const config: Partial<Config> = {
         text_generation: {
@@ -512,14 +515,27 @@ export function useProviderForm() {
         search: searchConfig.value
       }
       const result = await updateConfig(config)
-      if (result.success) await loadConfig({ silent: true })
-    } catch (e) {
-      console.error('自动保存失败:', e)
+      if (result.success) {
+        if (notify) {
+          message.success('配置已保存')
+        }
+        await loadConfig({ silent: true })
+        return true
+      } else {
+        message.error('保存配置失败: ' + (result.error || result.message || '未知错误'))
+        return false
+      }
+    } catch (e: any) {
+      const msg = e.response?.data?.error || e.message || '未知错误'
+      message.error('保存配置失败: ' + msg)
+      return false
+    } finally {
+      saving.value = false
     }
   }
 
   async function saveSearchConfig() {
-    await autoSaveConfig()
+    return await autoSaveConfig()
   }
 
   const textHandler = createProviderHandler(

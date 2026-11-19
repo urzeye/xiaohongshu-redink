@@ -137,10 +137,13 @@ class AppSettings:
             "http://localhost:5173",
             "http://localhost:3000",
             "http://127.0.0.1:12398",
+            "http://127.0.0.1:5173",
             "tauri://localhost",
             "http://tauri.localhost",
             "https://tauri.localhost",
         ]
+        user_cors = _to_list(os.getenv("REDINK_CORS_ORIGINS"), [])
+        cors_origins = list(dict.fromkeys(default_cors + user_cors))
 
         debug = _to_bool(os.getenv("REDINK_DEBUG"), default=True)
         log_level = (os.getenv("REDINK_LOG_LEVEL") or ("DEBUG" if debug else "INFO")).upper()
@@ -154,7 +157,7 @@ class AppSettings:
             port=_to_int(os.getenv("REDINK_PORT"), 12398),
             log_level=log_level,
             structured_logging=_to_bool(os.getenv("REDINK_STRUCTURED_LOG"), default=True),
-            cors_origins=_to_list(os.getenv("REDINK_CORS_ORIGINS"), default_cors),
+            cors_origins=cors_origins,
             rate_limit=(os.getenv("REDINK_RATE_LIMIT") or "60 per minute").strip(),
             rate_limit_storage_uri=(os.getenv("REDINK_RATE_LIMIT_STORAGE_URI") or "memory://").strip(),
             project_root=project_root,

@@ -33,6 +33,17 @@ const ACCESS_TOKEN_KEY = 'redink_access_token'
 
 let accessToken = localStorage.getItem(ACCESS_TOKEN_KEY) || ''
 
+if (isTauriEnvironment() && !accessToken && typeof window !== 'undefined') {
+  import('@tauri-apps/api/core')
+    .then(({ invoke }) => invoke<any>('get_platform_info'))
+    .then((info) => {
+      if (info?.auth_token && !accessToken) {
+        setAccessToken(info.auth_token)
+      }
+    })
+    .catch(() => {})
+}
+
 function getAuthHeaders(): Record<string, string> {
   if (!accessToken) return {}
   return { Authorization: `Bearer ${accessToken}` }
@@ -1051,13 +1062,21 @@ export async function downloadHistoryZip(
 }
 
 export async function getConfig(): Promise<{ success: boolean; config?: Config; error?: string }> {
-  const response = await axios.get(`${API_BASE_URL}/config`)
-  return response.data
+  try {
+    const response = await axios.get(`${API_BASE_URL}/config`, { timeout: 15000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '获取配置失败')
+  }
 }
 
 export async function updateConfig(config: Partial<Config>): Promise<{ success: boolean; message?: string; error?: string }> {
-  const response = await axios.post(`${API_BASE_URL}/config`, config)
-  return response.data
+  try {
+    const response = await axios.post(`${API_BASE_URL}/config`, config, { timeout: 20000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '更新配置失败')
+  }
 }
 
 export async function testConnection(config: {
@@ -1068,8 +1087,12 @@ export async function testConnection(config: {
   model?: string
   endpoint_type?: string
 }): Promise<{ success: boolean; message?: string; error?: string }> {
-  const response = await axios.post(`${API_BASE_URL}/config/test`, config)
-  return response.data
+  try {
+    const response = await axios.post(`${API_BASE_URL}/config/test`, config, { timeout: 35000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '测试连接失败')
+  }
 }
 
 // ==================== 内容生成 API ====================

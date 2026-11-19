@@ -890,8 +890,22 @@ async function changeSearchTimeoutSeconds(delta: number) {
 }
 
 onMounted(async () => {
+  if (isTauri.value) {
+    try {
+      const info = await getPlatformInfo();
+      platformInfo.value = info;
+      if (info?.auth_token && !getAccessToken()) {
+        setAccessToken(info.auth_token);
+        accessTokenInput.value = info.auth_token;
+      }
+    } catch (e) {
+      console.warn("获取桌面平台信息失败:", e);
+    }
+  }
   await Promise.all([loadConfig(), refreshAuthStatus(), refreshDesktopStatus()]);
-  accessTokenInput.value = getAccessToken();
+  if (!accessTokenInput.value) {
+    accessTokenInput.value = getAccessToken();
+  }
 });
 </script>
 
