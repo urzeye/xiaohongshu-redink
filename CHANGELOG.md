@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2] - 2026-11-20
+
+### 🚀 架构纯粹化与极简 Web 回归
+- **移除 Tauri 桌面端外壳**：全面清理 Rust/Tauri 桌面端层与跨平台打包复杂度，回归轻量可靠的 **Vue 3 + Python (Flask/FastAPI)** 架构。
+- **杜绝环境与死锁问题**：彻底消除桌面混合架构下的本地多进程拉起超时、探活死锁、SmartScreen 及 macOS Gatekeeper 签名受阻问题。
+
+### ⚡ 开箱即用与家庭宽带防风控
+- **一键双击极简启动**：原生提供 Windows `start.bat` 与 macOS/Linux `start.sh`，自动检测环境依赖并在默认浏览器打开应用，保持家庭宽带原生 IP 防风控保护。
+- **CI/CD 自动免构建打包**：升级 GitHub Release 自动化工作流，发版时自动编译前端静态资源并打包 `RedInk-*.zip`，普通用户解压后无需安装 Node.js/pnpm 即可开箱即用。
+
+### 🎨 UI 布局与视觉体验优化
+- **消除横向溢出滚动条**：重构大纲页面卡片自适应栅格比例与主容器最大宽度，适配各类笔记本屏幕与浏览器窗口尺寸。
+- **设置页配置管理升级**：预置主流模型（DeepSeek、通义千问、火山方舟/豆包、智谱等）开箱即用模板，支持外部修改后一键免重启热重载。
+
+### 🐳 Docker 与文档完善
+- **容器端口规范**：修正生产 Docker 容器统一访问端口为 `12398`，更新 `docker-compose.yml` 镜像标签与说明文档。
+
+
 ## [0.4.0] - 2026-11-18
 
 ### 🖥️ Desktop Application (Tauri v2)
