@@ -4,26 +4,9 @@
     <div class="hero-section">
       <div class="hero-ambient-glow"></div>
       <div class="hero-content">
-        <div class="brand-pill">
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path
-              d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"
-            />
-          </svg>
-          <span>RedInk 爆款工坊 · AI 驱动的双核创作引擎</span>
-        </div>
-        <h1 class="page-title">选择你的创作模式</h1>
+        <h1 class="page-title">选择创作模式</h1>
         <p class="page-subtitle">
-          从社媒爆款多图卡片到经典理论概念蓝图，让 AI 将你的创意一键高质量落地
+          RedInk 双核创作引擎 · 从 3:4 社媒爆款图文卡片到经典理论概念蓝图，让 AI 将你的创意一键高质量落地
         </p>
       </div>
 
@@ -183,35 +166,22 @@ function handleModeSelect(mode: 'redbook' | 'concept') {
   z-index: 1;
 }
 
-.brand-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: rgba(255, 36, 66, 0.08);
-  color: #ff4d63;
-  border-radius: 99px;
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  border: 1px solid rgba(255, 36, 66, 0.2);
-  letter-spacing: 0.01em;
-}
-
 .page-title {
   font-size: 38px;
   font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 12px;
-  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
 .page-subtitle {
   font-size: 16px;
   color: var(--text-sub);
-  line-height: 1.6;
-  max-width: 600px;
+  line-height: 1.65;
+  max-width: 640px;
   margin: 0 auto;
+  text-wrap: pretty;
 }
 
 /* 快捷入口 */
@@ -239,6 +209,11 @@ function handleModeSelect(mode: 'redbook' | 'concept') {
   text-decoration: none;
   transition: all var(--transition-fast);
   position: relative;
+}
+
+.quick-action:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .quick-action:hover {

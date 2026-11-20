@@ -1097,7 +1097,21 @@ watch(
 
 .typing-tip-icon {
   font-size: 14px;
-  animation: bounce 2s infinite ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: subtlePulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
 }
 
 .typing-tip-text {
@@ -1173,20 +1187,18 @@ watch(
 .page-number {
   min-width: 44px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--text-on-primary, #fff);
-  background: linear-gradient(
-    135deg,
-    var(--color-error-hover, #ff5f6d),
-    var(--color-error, #ff3f5c)
-  );
-  box-shadow: 0 6px 14px var(--color-primary-shadow);
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: var(--primary);
+  box-shadow: 0 4px 12px rgba(255, 36, 66, 0.28);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .page-type {

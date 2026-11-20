@@ -240,12 +240,13 @@ function getPageTypeName(type: string): string {
   min-width: 36px;
   height: 24px;
   padding: 0 8px;
-  background: var(--primary, #ff2442);
-  color: white;
-  border-radius: 4px;
+  background: var(--primary);
+  color: #ffffff;
+  border-radius: var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
-  font-family: "Inter", sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* 页面类型标识 */

@@ -174,26 +174,26 @@ defineEmits<{
   gap: 14px;
   padding: 18px 20px;
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   cursor: pointer;
   user-select: none;
   transition:
-    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .stat-box:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
   border-color: var(--border-hover);
 }
 
 .stat-box.active {
   border-color: var(--primary);
-  background: var(--bg-elevated, var(--bg-card));
+  background: var(--bg-elevated);
   box-shadow: 0 4px 16px rgba(255, 36, 66, 0.12);
 }
 
@@ -201,12 +201,12 @@ defineEmits<{
 .stat-icon-circle {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-fast);
 }
 
 .stat-box:hover .stat-icon-circle {
@@ -214,13 +214,13 @@ defineEmits<{
 }
 
 .stat-icon-circle.primary {
-  background: var(--primary-light, rgba(255, 36, 66, 0.12));
+  background: var(--primary-light);
   color: var(--primary);
 }
 
 .stat-icon-circle.indigo {
-  background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .stat-icon-circle.green {

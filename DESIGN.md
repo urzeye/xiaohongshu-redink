@@ -22,30 +22,30 @@ colors:
   info: "#3b82f6"
 typography:
   display:
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
     fontSize: "48px"
     fontWeight: 800
     lineHeight: 1.2
     letterSpacing: "-0.02em"
   headline:
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
     fontSize: "28px"
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: "-0.01em"
   title:
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
     fontSize: "18px"
     fontWeight: 600
     lineHeight: 1.4
     letterSpacing: "-0.01em"
   body:
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
     fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.65
   label:
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
     fontSize: "12px"
     fontWeight: 500
     letterSpacing: "0.05em"
@@ -138,11 +138,11 @@ RedInk 是一套专为自媒体与社媒爆款图文打造的工业级生产力�
 
 ## Typography
 
-**Display Font:** Inter, -apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, sans-serif
-**Body Font:** Inter, -apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, sans-serif
+**Display Font:** system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", PingFang SC, Microsoft YaHei, sans-serif
+**Body Font:** system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", PingFang SC, Microsoft YaHei, sans-serif
 **Label/Mono Font:** ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace
 
-**Character:** 严谨、清晰、极高数字渲染精度的现代无衬线体。西文采用 Inter 带来紧凑的字距与几何张力，中文兼顾苹方与微软雅黑的清晰笔画，在大字号下充满力量感，在小字号下保持长文可读性。
+**Character:** 严谨、清晰、极高数字渲染精度的现代无衬线体。现代系统字体族带来紧凑的字距与几何张力，兼顾苹方与微软雅黑的清晰笔画，在大字号下充满力量感，在小字号下保持长文可读性。
 
 ### Hierarchy
 - **Display** (800, 48px, line-height 1.2, letter-spacing -0.02em): 英雄区核心大标题与关键数字展示。

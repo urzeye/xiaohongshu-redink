@@ -981,19 +981,20 @@ onMounted(() => {
   gap: 8px;
   padding: 10px 16px;
   background: var(--bg-secondary);
-  border: 2px solid var(--border-color);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .style-option:hover {
-  border-color: var(--primary);
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
 }
 
 .style-option.selected {
   border-color: var(--primary);
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--primary-light);
 }
 
 .style-preview {
@@ -1096,10 +1097,15 @@ onMounted(() => {
 }
 
 .mapping-card {
-  padding: 16px;
-  background: var(--bg-secondary);
+  padding: 18px 20px;
+  background: var(--bg-elevated);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--primary);
+  border: 1px solid var(--border-color);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.mapping-card:hover {
+  border-color: var(--border-hover);
 }
 
 .mapping-header {

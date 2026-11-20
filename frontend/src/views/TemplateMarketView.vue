@@ -1,33 +1,9 @@
 <template>
   <div class="container market-container">
     <section class="market-hero">
-      <div class="hero-badge">
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M20 7h-9"></path>
-          <path d="M14 17H5"></path>
-          <circle
-            cx="17"
-            cy="17"
-            r="3"
-          ></circle>
-          <circle
-            cx="7"
-            cy="7"
-            r="3"
-          ></circle>
-        </svg>
-        热门模板持续更新
-      </div>
       <h1 class="page-title">模板市集</h1>
       <p class="hero-subtitle">
-        搜索灵感、按分类筛选，预览后可一键带入创作中心。
+        精选社媒爆款模板与视觉排版风格，按分类筛选预览，一键带入创作工坊
       </p>
     </section>
 
@@ -324,11 +300,10 @@ onMounted(async () => {
 .market-hero {
   background:
     radial-gradient(
-      1000px 200px at 20% -20%,
-      rgba(0, 255, 136, 0.14),
+      800px 200px at 50% -20%,
+      rgba(255, 36, 66, 0.08),
       transparent
     ),
-    radial-gradient(900px 250px at 90% 0, rgba(56, 189, 248, 0.1), transparent),
     var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
@@ -336,24 +311,12 @@ onMounted(async () => {
   margin-bottom: 22px;
 }
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--primary);
-  background: var(--primary-light);
-  border: 1px solid var(--primary);
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 999px;
-  padding: 6px 12px;
-  margin-bottom: 14px;
-}
-
 .hero-subtitle {
   color: var(--text-sub);
-  font-size: 16px;
   margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 
 .toolbar-card {

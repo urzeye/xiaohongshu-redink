@@ -6,30 +6,9 @@
     <!-- Hero Area -->
     <div class="hero-section">
       <div class="hero-content">
-        <div class="brand-pill">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="margin-right: 6px"
-          >
-            <path
-              d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"
-            />
-          </svg>
-          AI 驱动的图文创作工坊
-        </div>
-        <div class="platform-slogan">
-          让传播不再需要门槛，让创作从未如此简单
-        </div>
         <h1 class="page-title">灵感一触即发</h1>
         <p class="page-subtitle">
-          输入你的创意主题，AI 即可智能规划大纲、匹配排版并批量渲染 3:4 爆款图文卡片
+          输入选题或创意灵感，智能规划大纲并批量渲染 3:4 原生爆款图文卡片
         </p>
       </div>
 
@@ -691,33 +670,24 @@ watch(
   color: var(--primary);
 }
 
-.brand-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 20px;
-  background: var(--primary-fade);
-  color: var(--primary);
-  border-radius: var(--radius-sm);
-  font-size: var(--small-size);
-  font-weight: 600;
-  margin-bottom: 24px;
-  border: 1px solid var(--primary-light);
-}
-
-.platform-slogan {
-  font-size: var(--h3-size);
-  font-weight: 600;
-  color: var(--text-main);
+.hero-content {
   margin-bottom: 28px;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
 }
 
-.page-subtitle {
-  font-size: var(--body-size);
+.hero-content .page-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-main);
+  text-wrap: balance;
+}
+
+.hero-content .page-subtitle {
+  font-size: 16px;
   color: var(--text-sub);
-  margin-top: 12px;
-  line-height: var(--body-line-height);
+  margin-top: 10px;
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 
 /* Page Footer */

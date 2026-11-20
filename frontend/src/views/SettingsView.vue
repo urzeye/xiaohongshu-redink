@@ -53,7 +53,7 @@
             </button>
           </div>
         </div>
-        <p class="security-hint" style="font-size: 13px; color: #64748b; margin-top: 6px;">
+        <p class="security-hint" style="font-size: 13px; color: var(--text-sub); margin-top: 8px; line-height: 1.6;">
           💡 提示：系统已默认内置 DeepSeek、通义千问、火山方舟(豆包)、智谱等主流服务商模板，只需在下方对应服务商卡片点击「编辑」填入 API Key 即可使用；如需外部手工修改 YAML 或 .env 文件，修改后点击右上角「重载配置文件」即可免重启生效。
         </p>
       </div>
@@ -978,17 +978,22 @@ onMounted(async () => {
   width: 46px;
   height: 28px;
   border-radius: 999px;
-  border: 1px solid #d1d5db;
-  background: #e5e7eb;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
   padding: 2px;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
+.runtime-switch:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .runtime-switch.active {
-  border-color: #10b981;
-  background: #10b981;
-  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+  border-color: var(--color-success);
+  background: var(--color-success);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25);
 }
 
 .runtime-switch:disabled {

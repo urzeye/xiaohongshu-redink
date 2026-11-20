@@ -1738,10 +1738,10 @@ onUnmounted(() => {
 
 /* 徽章样式 */
 .account-alias-badge {
-  background: rgba(255, 36, 66, 0.12);
-  color: #ff2442;
-  border: 1px solid rgba(255, 36, 66, 0.25);
-  border-radius: 4px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-light);
+  border-radius: var(--radius-xs);
   font-size: 11px;
   padding: 1px 6px;
   font-weight: 500;
@@ -1750,20 +1750,20 @@ onUnmounted(() => {
 .creator-badge {
   font-size: 11px;
   padding: 1px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-weight: 500;
 }
 
 .creator-badge.creator-ready {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
 }
 
 .creator-badge.creator-needed {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
 }
 
 /* 动作操作区 */
@@ -1779,27 +1779,28 @@ onUnmounted(() => {
   align-items: center;
   padding: 8px 14px;
   font-size: 14px;
-  background: var(--bg-secondary, #1c1c21);
-  border: 1px solid var(--border-color, #27272a);
-  color: var(--text-main, #f4f4f5);
-  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 
 .account-switch-trigger:hover {
-  border-color: #ff2442;
-  background: rgba(255, 36, 66, 0.06);
+  border-color: var(--primary);
+  background: var(--primary-fade);
 }
 
 .account-count-badge {
   margin-left: 6px;
-  background: rgba(255, 36, 66, 0.2);
-  color: #ff2442;
+  background: var(--primary-light);
+  color: var(--primary);
   font-size: 11px;
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: 99px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 切换下拉浮层 */

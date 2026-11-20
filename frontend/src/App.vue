@@ -717,7 +717,7 @@ const themeOverrides: GlobalThemeOverrides = {
     borderRadius: "8px",
     borderRadiusSmall: "6px",
     fontFamily:
-      '"Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif',
+      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
   },
 };
 

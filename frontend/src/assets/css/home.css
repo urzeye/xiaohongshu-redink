@@ -394,7 +394,9 @@
   margin-right: 14px;
   color: var(--text-placeholder);
   font-style: italic;
-  font-family: 'Inter', monospace;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .trend-rank.rank-1 { color: var(--primary); }

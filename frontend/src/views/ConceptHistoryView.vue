@@ -675,23 +675,24 @@ onUnmounted(() => {
 }
 
 .record-card {
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   position: relative;
 }
 
 .record-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+  border-color: var(--border-hover);
 }
 
 .card-thumbnail {
   height: 160px;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   overflow: hidden;
 }
 
@@ -707,7 +708,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
+  color: var(--text-placeholder);
 }
 
 .card-content {
@@ -721,6 +722,7 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-main);
 }
 
 .card-preview {
@@ -731,6 +733,7 @@ onUnmounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 1.5;
 }
 
 .card-meta {
@@ -739,6 +742,7 @@ onUnmounted(() => {
   align-items: center;
   font-size: 12px;
   color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
 }
 
 .meta-item {
@@ -749,41 +753,47 @@ onUnmounted(() => {
 
 .status-badge {
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 99px;
   font-size: 11px;
+  font-weight: 500;
 }
 
 .status-completed {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
 }
 
 .status-in_progress {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info-border);
 }
 
 .status-error {
-  background: #ffebee;
-  color: #c62828;
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
 }
 
 .status-draft {
-  background: #f5f5f5;
-  color: #757575;
+  background: var(--bg-elevated);
+  color: var(--text-sub);
+  border: 1px solid var(--border-color);
 }
 
 .delete-btn {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
   padding: 6px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  color: var(--text-sub);
+  transition: all var(--transition-fast);
 }
 
 .record-card:hover .delete-btn {
@@ -791,8 +801,9 @@ onUnmounted(() => {
 }
 
 .delete-btn:hover {
-  background: #fee;
-  color: #c00;
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-color: var(--color-error-border);
 }
 
 .pagination {
@@ -806,9 +817,17 @@ onUnmounted(() => {
 .pagination button {
   padding: 8px 16px;
   border: 1px solid var(--border-color);
-  background: white;
-  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--bg-elevated);
 }
 
 .pagination button:disabled {
@@ -823,7 +842,8 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -832,14 +852,17 @@ onUnmounted(() => {
 }
 
 .modal-content {
-  background: white;
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   max-width: 900px;
   max-height: 90vh;
   width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  color: var(--text-main);
 }
 
 .modal-header {
@@ -847,12 +870,14 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 20px;
-  color: #1a1a1a;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .close-btn {
@@ -861,6 +886,11 @@ onUnmounted(() => {
   cursor: pointer;
   padding: 4px;
   color: var(--text-sub);
+  transition: color var(--transition-fast);
+}
+
+.close-btn:hover {
+  color: var(--text-main);
 }
 
 .modal-body {
@@ -878,8 +908,9 @@ onUnmounted(() => {
 .analysis-section h3,
 .article-section h3 {
   font-size: 16px;
+  font-weight: 600;
   margin: 0 0 16px;
-  color: #1a1a1a;
+  color: var(--text-main);
 }
 
 .images-grid {
@@ -889,10 +920,11 @@ onUnmounted(() => {
 }
 
 .image-item {
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   cursor: pointer;
   position: relative;
+  border: 1px solid var(--border-color);
 }
 
 .image-item img {
@@ -908,7 +940,7 @@ onUnmounted(() => {
 .image-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -923,10 +955,11 @@ onUnmounted(() => {
 
 .theme-info {
   margin-bottom: 16px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #1a1a1a;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
 }
 
 .concepts-list {
@@ -936,34 +969,37 @@ onUnmounted(() => {
 }
 
 .concept-item {
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #1a1a1a;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
 }
 
 .concept-name {
   font-weight: 600;
   display: block;
   margin-bottom: 4px;
-  color: #1a1a1a;
+  color: var(--text-main);
 }
 
 .concept-desc {
   font-size: 13px;
-  color: #666;
+  color: var(--text-sub);
+  line-height: 1.5;
 }
 
 .article-content {
   padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   max-height: 60vh;
   overflow-y: auto;
   white-space: pre-wrap;
   font-size: 14px;
   line-height: 1.6;
-  color: #333;
+  color: var(--text-main);
 }
 
 /* Lightbox */

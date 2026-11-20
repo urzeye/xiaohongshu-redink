@@ -611,8 +611,8 @@ function getSearchStatusMeta(name: string, provider: Provider): { text: string; 
 }
 
 .table-row.active {
-  background: var(--primary-fade);
-  border-left: 3px solid var(--primary);
+  background: var(--primary-light);
+  box-shadow: inset 0 0 0 1px rgba(255, 36, 66, 0.28);
 }
 
 .btn-activate {

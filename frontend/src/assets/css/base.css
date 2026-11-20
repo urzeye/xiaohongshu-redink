@@ -314,7 +314,7 @@ h4,
   text-wrap: pretty;
 }
 
-/* 数字与度量指标对齐 */
+/* 数字与度量指标对齐 (工业级等宽对齐) */
 .number,
 .stat-value,
 .page-number,
@@ -322,9 +322,21 @@ h4,
 .count,
 .badge-count,
 .char-count,
-.scrape-meta {
+.scrape-meta,
+.trend-rank,
+.step-num,
+.step-indicator,
+.account-count-badge,
+.progress-value,
+.rate-limit-badge {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+/* 小红书 3:4 原生画幅比例 */
+.ratio-redbook,
+.aspect-3-4 {
+  aspect-ratio: 3 / 4;
 }
 
 /* 小号文本 */
