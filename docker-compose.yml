@@ -1,6 +1,6 @@
 services:
   xiaohongshu-redink:
-    image: ghcr.io/urzeye/xiaohongshu-redink:0.4.0
+    image: ghcr.io/urzeye/xiaohongshu-redink:latest
     container_name: xiaohongshu-redink
     ports:
       - "12398:12398"

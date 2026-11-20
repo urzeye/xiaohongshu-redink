@@ -123,8 +123,9 @@
 ### 方式一：本地一键启动（🔥强烈推荐 · 创作者安全防封首选）
 
 针对小红书创作者在**家庭宽带环境**下的安全发布需求，避免云端服务器 IP 带来的平台风控与滑块验证：
-- 🪟 **Windows 用户**：双击运行项目根目录下的 **`start.bat`** 即可，自动拉起服务并自动在默认浏览器中打开页面！
-- 🍏 **macOS / Linux 用户**：终端直接执行 **`./start.sh`** 即可一键启动。
+- 📥 **免构建运行包**：从 [GitHub Releases](https://github.com/urzeye/xiaohongshu-redink/releases) 下载最新的 `RedInk-*.zip` 压缩包（已预先编译好前端静态产物，无需安装 Node.js 或 pnpm）；
+- 🪟 **Windows 用户**：双击运行项目根目录下的 **`start.bat`** 即可，自动拉起服务并在默认浏览器中打开页面！
+- 🍏 **macOS / Linux 用户**：终端直接执行 **`./start.sh`** 即可一键启动；
 - 🛡️ **天然家庭宽带 IP**：整个图文创作与小红书发布流程 100% 运行于创作者本地家庭宽带网络，免受云端 IP 封禁困扰。
 
 ---
@@ -140,7 +141,7 @@
 docker-compose up -d
 ```
 
-启动后在浏览器访问 <http://localhost:5173> 即可使用。
+启动后在浏览器访问 <http://localhost:12398> 即可使用。
 
 ---
 
@@ -186,9 +187,9 @@ pnpm install
 pnpm dev
 ```
 
-> ✅ **一键启动脚本（可选）**
-> - Windows: 双击 `start.bat` 或运行 `scripts/start-windows.bat`
-> - macOS / Linux: 运行 `bash scripts/start-all.sh`
+> ✅ **一键启动脚本**
+> - Windows: 双击根目录下的 `start.bat`
+> - macOS / Linux: 执行根目录下的 `./start.sh`
 
 *注：您可以在 Web 界面的**系统设置**中直接配置您的外部模型 API 提供商密钥（支持 BYOK 自带密钥）。*
 

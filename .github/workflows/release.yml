@@ -15,12 +15,66 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Build Frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --dir frontend install --frozen-lockfile
+          pnpm --dir frontend build
+
+      - name: Package Prebuilt Release Archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_NAME="RedInk-${VERSION}"
+          mkdir -p "${PACKAGE_NAME}"
+
+          # 复制后端、内置数据与工具
+          cp -r backend "${PACKAGE_NAME}/"
+          cp -r data "${PACKAGE_NAME}/"
+          if [ -d tools ]; then
+            cp -r tools "${PACKAGE_NAME}/"
+          fi
+
+          # 复制已编译好的静态前端产物（免除最终用户安装 Node.js 与构建）
+          mkdir -p "${PACKAGE_NAME}/frontend"
+          cp -r frontend/dist "${PACKAGE_NAME}/frontend/"
+
+          # 复制项目启动与核心配置文件
+          cp pyproject.toml alembic.ini README.md .env.example start.bat start.sh "${PACKAGE_NAME}/"
+          for f in *.yaml.example; do
+            if [ -f "$f" ]; then
+              cp "$f" "${PACKAGE_NAME}/"
+            fi
+          done
+
+          # 打包为 zip 和 tar.gz
+          zip -r "${PACKAGE_NAME}.zip" "${PACKAGE_NAME}"
+          tar -czf "${PACKAGE_NAME}.tar.gz" "${PACKAGE_NAME}"
+
+          mkdir -p release-assets
+          mv "${PACKAGE_NAME}.zip" release-assets/
+          mv "${PACKAGE_NAME}.tar.gz" release-assets/
 
       - name: Prepare Release Notes
         shell: bash
@@ -30,10 +84,11 @@ jobs:
           cat > release-notes.md <<'NOTES'
           ## RedInk · 小红书 AI 爆款创作与本地安全发布引擎
 
-          ### 🚀 运行方式
-          - **本地 Web 模式**：通过一键启动脚本（Windows: `start.bat`，macOS/Linux: `start.sh`）或源码启动；
-          - **Docker 容器化**：支持 Docker & Docker Compose 一键启动；
-          - **家庭宽带发布**：支持在创作者本地网络运行，规避云端 IP 风控。
+          ### 🚀 运行方式（首选推荐）
+          - **免构建便携包**：直接下载下方的 `RedInk-*.zip` 压缩包（已预编译好前端，无需 Node.js/pnpm）；
+          - **Windows 用户**：解压后双击运行 **`start.bat`** 即可在家庭宽带环境下自动拉起并打开浏览器；
+          - **macOS / Linux 用户**：解压后终端执行 **`./start.sh`**；
+          - **Docker 用户**：执行 `docker-compose up -d`，访问 `http://localhost:12398`。
 
           ### 📝 本次更新内容
           NOTES
@@ -51,6 +106,9 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: RedInk ${{ github.ref_name }}
           body_path: release-notes.md
+          files: |
+            release-assets/*.zip
+            release-assets/*.tar.gz
           generate_release_notes: false
           draft: false
           prerelease: false
