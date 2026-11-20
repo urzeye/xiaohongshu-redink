@@ -6,7 +6,7 @@
         :key="step.key"
         class="stepper-item"
         :class="{
-          active: currentStep === step.key,
+          active: normalizedStep === step.key,
           completed: isStepCompleted(step.key),
           clickable: isStepClickable(step.key),
         }"
@@ -27,11 +27,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useGeneratorStore } from "../../stores/generator";
 
 const props = defineProps<{
-  currentStep: "topic" | "outline" | "result" | "publish";
+  currentStep: "topic" | "outline" | "result" | "publish" | number | string;
 }>();
 
 const router = useRouter();
@@ -46,6 +47,14 @@ const steps = [
 
 type StepKey = (typeof steps)[number]["key"];
 
+const normalizedStep = computed<StepKey>(() => {
+  const raw = props.currentStep;
+  if (raw === "publish" || raw === 4 || raw === "4") return "publish";
+  if (raw === "result" || raw === 3 || raw === "3") return "result";
+  if (raw === "outline" || raw === 2 || raw === "2") return "outline";
+  return "topic";
+});
+
 const stepOrder: Record<StepKey, number> = {
   topic: 0,
   outline: 1,
@@ -54,12 +63,12 @@ const stepOrder: Record<StepKey, number> = {
 };
 
 function isStepCompleted(key: StepKey): boolean {
-  return stepOrder[props.currentStep] > stepOrder[key];
+  return stepOrder[normalizedStep.value] > stepOrder[key];
 }
 
 function isStepClickable(key: StepKey): boolean {
   // 允许随时回到前面的步骤
-  if (stepOrder[key] < stepOrder[props.currentStep]) return true;
+  if (stepOrder[key] < stepOrder[normalizedStep.value]) return true;
   // 如果大纲已有内容，允许点击到大纲
   if (key === "outline" && store.outline?.pages?.length > 0) return true;
   // 如果已经有生成的图片，允许点击到结果

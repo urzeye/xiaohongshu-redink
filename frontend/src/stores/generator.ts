@@ -88,6 +88,12 @@ export interface GeneratorState {
 
   // 最后一次保存到服务器的时间（ISO格式字符串）
   lastSavedAt: string | null
+
+  // 是否已发布到小红书
+  isPublished: boolean
+
+  // 发布成功后的文章链接
+  publishedUrl: string | null
 }
 
 const STORAGE_KEY = 'generator-state'
@@ -128,7 +134,9 @@ function saveState(state: GeneratorState) {
       imagePrompt: state.imagePrompt,        // 图片生成 Prompt 上下文
       content: state.content,                // 生成的内容（标题、文案、标签）
       outlineStatus: state.outlineStatus,    // 大纲生成状态
-      lastSavedAt: state.lastSavedAt         // 最后保存时间
+      lastSavedAt: state.lastSavedAt,        // 最后保存时间
+      isPublished: state.isPublished || false, // 是否已发布
+      publishedUrl: state.publishedUrl || null // 发布成功链接
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
   } catch (e) {
@@ -288,7 +296,13 @@ export const useGeneratorStore = defineStore('generator', {
       outlineStatus: saved.outlineStatus || 'idle',
 
       // 最后保存时间
-      lastSavedAt: saved.lastSavedAt || null
+      lastSavedAt: saved.lastSavedAt || null,
+
+      // 是否已发布到小红书
+      isPublished: saved.isPublished || false,
+
+      // 发布成功后的文章链接
+      publishedUrl: saved.publishedUrl || null
     }
   },
 
@@ -621,8 +635,24 @@ export const useGeneratorStore = defineStore('generator', {
       // 清空最后保存时间
       this.lastSavedAt = null
 
+      // 重置发布状态
+      this.isPublished = false
+      this.publishedUrl = null
+
       // 清除 localStorage 中的持久化数据
       localStorage.removeItem(STORAGE_KEY)
+    },
+
+    /**
+     * 标记当前任务已成功发布到小红书
+     * @param url 发布成功后的文章链接
+     */
+    markAsPublished(url?: string) {
+      this.isPublished = true
+      if (url) {
+        this.publishedUrl = url
+      }
+      this.saveToStorage()
     },
 
     /**
@@ -769,7 +799,9 @@ export function setupAutoSave() {
       imagePrompt: store.imagePrompt,        // 图片生成 Prompt 上下文
       content: store.content,                // 生成的内容
       outlineStatus: store.outlineStatus,    // 大纲生成状态
-      lastSavedAt: store.lastSavedAt         // 最后保存时间
+      lastSavedAt: store.lastSavedAt,        // 最后保存时间
+      isPublished: store.isPublished,        // 是否已发布
+      publishedUrl: store.publishedUrl       // 发布链接
     }),
     () => {
       store.saveToStorage()

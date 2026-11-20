@@ -1,20 +1,60 @@
 <template>
-  <div class="publish-view" style="max-width: 1000px; margin: 0 auto; padding: 24px">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px">
-      <CreationStepper :current-step="4" />
-      <button class="btn btn-secondary" @click="goBack" style="margin-left: 20px">
-        返回结果页
-      </button>
-    </div>
+  <div class="container publish-view" style="max-width: 1040px; margin: 0 auto; padding: 24px">
+    <!-- 创作流程指示器 -->
+    <CreationStepper current-step="publish" />
 
-    <!-- 标题与副标题 -->
-    <div style="margin-bottom: 28px">
-      <h1 style="font-size: 26px; font-weight: 700; margin-bottom: 8px">
-        发布到小红书
-      </h1>
-      <p style="color: var(--text-sub); font-size: 15px">
-        将生成的内容一键发布至小红书创作者平台，支持多账号安全切换与自主管理
-      </p>
+    <!-- 页面标题与顶部操作栏 -->
+    <div class="page-header publish-page-header">
+      <div class="publish-header-main">
+        <h1 class="page-title">发布到小红书</h1>
+        <p class="page-subtitle">
+          将生成的内容一键发布至小红书创作者平台，支持多账号安全切换与自主管理
+        </p>
+      </div>
+      <div class="header-actions">
+        <button
+          class="btn btn-secondary"
+          @click="goBack"
+          title="返回并查看已生成的图文卡片"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="margin-right: 6px"
+          >
+            <path d="M19 12H5"></path>
+            <path d="m12 19-7-7 7-7"></path>
+          </svg>
+          返回查看图文
+        </button>
+        <button
+          class="btn btn-secondary"
+          @click="startNewNote"
+          title="清空当前图文并开始新创作"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="margin-right: 6px"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          再来一篇
+        </button>
+      </div>
     </div>
 
     <!-- VibeSurf 服务状态检测 -->
@@ -224,6 +264,88 @@
             {{ checkingLogin ? "刷新中..." : "刷新状态" }}
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- 发布成功全宽祝贺横幅与快捷流转 -->
+    <div
+      v-if="publishResult?.success || store.isPublished"
+      class="card publish-celebration-card"
+    >
+      <div class="celebration-badge">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#10b981"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <div class="celebration-content">
+        <div class="celebration-title">
+          🎉 笔记已成功发布到小红书！
+        </div>
+        <div class="celebration-desc">
+          已发布至账号「<span class="user-highlight">{{ activeAccount?.username || loginStatus?.username || "小红书账号" }}</span>」<span v-if="activeAccount?.alias">({{ activeAccount.alias }})</span>，创作者中心后台已同步。你可以前往手机 App 查看，或直接开始下一篇创作。
+        </div>
+        <div
+          v-if="publishResult?.post_url || store.publishedUrl"
+          class="celebration-link-row"
+        >
+          <span class="link-label">笔记链接：</span>
+          <a
+            :href="publishResult?.post_url || store.publishedUrl!"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="celebration-link"
+          >
+            {{ publishResult?.post_url || store.publishedUrl }}
+          </a>
+        </div>
+      </div>
+      <div class="celebration-actions">
+        <button class="btn btn-primary" @click="startNewNote">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="margin-right: 6px"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          创作新笔记
+        </button>
+        <a
+          v-if="publishResult?.post_url || store.publishedUrl"
+          :href="publishResult?.post_url || store.publishedUrl!"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-secondary"
+        >
+          在小红书查看
+        </a>
+        <button
+          v-if="publishResult?.post_url || store.publishedUrl"
+          class="btn btn-secondary"
+          @click="copyPostUrl"
+        >
+          复制链接
+        </button>
+        <button class="btn btn-ghost" @click="router.push('/history')">
+          查看历史记录
+        </button>
       </div>
     </div>
 
@@ -454,59 +576,49 @@
         </div>
       </div>
 
-      <!-- 发布结果 -->
+      <!-- 发布结果面板 -->
       <div
         v-if="publishResult"
-        style="
-          margin-top: 24px;
-          border-top: 1px solid var(--border-color);
-          padding-top: 20px;
-        "
+        class="publish-result-panel"
+        :class="{ 'is-success': publishResult.success, 'is-error': !publishResult.success }"
       >
-        <div
-          :style="{
-            padding: '16px',
-            borderRadius: '8px',
-            background: publishResult.success
-              ? 'var(--color-success-bg, rgba(16, 185, 129, 0.1))'
-              : 'var(--color-error-bg, rgba(239, 68, 68, 0.1))',
-            border: `1px solid ${publishResult.success ? 'var(--color-success-border, rgba(16, 185, 129, 0.2))' : 'var(--color-error-border, rgba(239, 68, 68, 0.2))'}`,
-          }"
-        >
-          <div style="font-weight: 600; margin-bottom: 8px">
-            {{ publishResult.success ? "发布成功!" : "发布失败" }}
-          </div>
-          <div
-            v-if="publishResult.post_url"
-            style="font-size: 14px"
+        <div class="result-status-line">
+          <span class="result-status-icon">{{ publishResult.success ? "✓" : "!" }}</span>
+          <span class="result-status-title">
+            {{ publishResult.success ? "发布成功！" : "发布失败" }}
+          </span>
+        </div>
+
+        <div v-if="publishResult.post_url" class="result-url-box">
+          <div style="margin-bottom: 6px; color: var(--text-sub); font-size: 13px;">已生成文章链接：</div>
+          <a
+            :href="publishResult.post_url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="result-link"
           >
-            <div style="margin-bottom: 6px">文章链接：</div>
+            {{ publishResult.post_url }}
+          </a>
+          <div class="result-btn-row">
+            <button class="btn btn-secondary btn-sm" @click="copyPostUrl">
+              复制链接
+            </button>
             <a
               :href="publishResult.post_url"
               target="_blank"
               rel="noopener noreferrer"
-              style="
-                color: var(--primary);
-                word-break: break-all;
-                line-height: 1.5;
-              "
+              class="btn btn-secondary btn-sm"
             >
-              {{ publishResult.post_url }}
+              在新窗口打开
             </a>
-            <button
-              class="btn"
-              style="margin-top: 10px; padding: 6px 12px; font-size: 13px"
-              @click="copyPostUrl"
-            >
-              复制链接
+            <button class="btn btn-primary btn-sm" @click="startNewNote">
+              ✨ 开启下一篇创作
             </button>
           </div>
-          <div
-            v-if="publishResult.error"
-            style="font-size: 14px; color: var(--color-error)"
-          >
-            {{ publishResult.error }}
-          </div>
+        </div>
+
+        <div v-if="publishResult.error" class="result-error-box">
+          {{ publishResult.error }}
         </div>
       </div>
     </div>
@@ -514,19 +626,17 @@
     <!-- 无内容提示 -->
     <div
       v-else-if="store.images.length === 0"
-      class="card"
+      class="card empty-content-card"
     >
-      <div
-        style="text-align: center; padding: 48px 24px; color: var(--text-sub)"
-      >
+      <div class="empty-state-content">
         <svg
-          width="64"
-          height="64"
+          width="56"
+          height="56"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           stroke-width="1.5"
-          style="margin: 0 auto 16px"
+          style="margin: 0 auto 16px; opacity: 0.5"
         >
           <rect
             x="3"
@@ -543,13 +653,26 @@
           ></circle>
           <polyline points="21 15 16 10 5 21"></polyline>
         </svg>
-        <p style="font-size: 16px; margin-bottom: 16px">还没有生成内容</p>
-        <button
-          class="btn btn-primary"
-          @click="goHome"
-        >
-          去生成
-        </button>
+        <p class="empty-title">
+          {{ store.isPublished ? "上一篇图文已发布完成" : "还没有可发布的图文内容" }}
+        </p>
+        <p class="empty-subtitle">
+          {{ store.isPublished ? "可以开启新选题创作，或前往历史记录查看以往作品" : "请先前往灵感选题输入主题并生成图文卡片" }}
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px;">
+          <button
+            class="btn btn-primary"
+            @click="startNewNote"
+          >
+            ✨ 开启新创作
+          </button>
+          <button
+            class="btn btn-secondary"
+            @click="router.push('/history')"
+          >
+            查看历史记录
+          </button>
+        </div>
       </div>
     </div>
 
@@ -941,8 +1064,13 @@ const goBack = () => {
   router.push("/redbook/result");
 };
 
+const startNewNote = () => {
+  store.reset();
+  router.push("/redbook");
+};
+
 const goHome = () => {
-  router.push("/");
+  startNewNote();
 };
 
 // ---------------- VibeSurf 服务控制 ----------------
@@ -1342,11 +1470,16 @@ const startPublish = async () => {
     // onComplete
     (event: PublishProgressEvent) => {
       isPublishing.value = false;
+      const success = event.success || false;
       publishResult.value = {
-        success: event.success || false,
+        success,
         post_url: event.post_url,
         error: event.error,
       };
+      if (success) {
+        store.markAsPublished(event.post_url);
+        message.success("小红书笔记发布成功！");
+      }
       // 发布成功后刷新活跃账号
       loadAccounts();
     },
@@ -1372,6 +1505,12 @@ const startPublish = async () => {
 // ---------------- 生命周期 ----------------
 
 onMounted(async () => {
+  if (store.isPublished) {
+    publishResult.value = {
+      success: true,
+      post_url: store.publishedUrl || undefined,
+    };
+  }
   if (store.content.titles.length > 0) {
     selectedTitle.value = store.content.titles[0];
   }
@@ -1779,5 +1918,219 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover !important;
+}
+
+/* 规范化页面头部 */
+.publish-page-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.publish-header-main {
+  flex: 1;
+  min-width: 280px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* 发布成功全宽祝贺横幅 */
+.publish-celebration-card {
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 22px 24px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeInDown 0.3s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.celebration-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.15);
+  flex-shrink: 0;
+}
+
+.celebration-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.celebration-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.celebration-desc {
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+.user-highlight {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.celebration-link-row {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.celebration-link {
+  color: #ff2442;
+  font-size: 13px;
+  word-break: break-all;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.celebration-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+/* 发布结果面板（卡片内） */
+.publish-result-panel {
+  margin-top: 24px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.publish-result-panel.is-success {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.publish-result-panel.is-error {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.result-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.result-status-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.publish-result-panel.is-error .result-status-icon {
+  background: #ef4444;
+}
+
+.result-status-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-main);
+}
+
+.result-url-box {
+  margin-top: 8px;
+}
+
+.result-link {
+  display: inline-block;
+  color: #ff2442;
+  word-break: break-all;
+  line-height: 1.5;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.result-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.result-error-box {
+  font-size: 14px;
+  color: #ef4444;
+  line-height: 1.5;
+}
+
+/* 空状态卡片 */
+.empty-content-card {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-state-content {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.empty-subtitle {
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.5;
+  margin-bottom: 20px;
 }
 </style>

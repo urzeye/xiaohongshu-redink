@@ -407,7 +407,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   transform: scale(0.8) translateY(10px);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .image-card:hover .glass-zoom-icon {
@@ -436,13 +436,13 @@
   border-radius: 16px;
   font-size: 13px;
   font-weight: 500;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   pointer-events: auto;
 }
 
 .overlay-regenerate-btn svg {
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .overlay-regenerate-btn:hover {
@@ -694,7 +694,7 @@ const onPreviewKeydown = (event: KeyboardEvent) => {
 
 const startOver = () => {
   store.reset();
-  router.push("/");
+  router.push("/redbook");
 };
 
 const goToPublish = () => {

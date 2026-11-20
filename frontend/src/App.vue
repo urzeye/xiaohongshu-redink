@@ -661,22 +661,51 @@ const generatorStore = useGeneratorStore();
 
 function navigateRedbook(e: Event) {
   e.preventDefault();
+
+  // 1. 如果已发布完成，或用户已经在结果页/发布页并再次点击菜单“小红书图文”
+  // 说明用户希望开启新的一轮图文创作，清理旧任务并进入灵感选题
+  if (
+    generatorStore.isPublished ||
+    route.path === "/redbook/result" ||
+    route.path.startsWith("/redbook/result") ||
+    route.path === "/redbook/publish"
+  ) {
+    generatorStore.reset();
+    router.push("/redbook");
+    return;
+  }
+
+  // 2. 如果当前有正在生成中的任务，保持在结果页查看实时进度
   if (
     generatorStore.stage === "generating" ||
-    (generatorStore.stage === "result" &&
-      (generatorStore.images.length > 0 ||
-        generatorStore.taskId ||
-        generatorStore.recordId))
+    (generatorStore.progress?.status === "generating" && generatorStore.imageJobId)
   ) {
     router.push("/redbook/result");
-  } else if (
+    return;
+  }
+
+  // 3. 如果大纲编辑中，从其他模块返回时恢复大纲页面
+  if (
     generatorStore.stage === "outline" &&
-    generatorStore.outline.pages.length > 0
+    generatorStore.outline.pages.length > 0 &&
+    !route.path.startsWith("/redbook")
   ) {
     router.push("/redbook/outline");
-  } else {
-    router.push("/redbook");
+    return;
   }
+
+  // 4. 如果已有未发布的生成结果且从其他模块（如历史/知识库/设置）切回，查看当前结果
+  if (
+    generatorStore.stage === "result" &&
+    generatorStore.images.length > 0 &&
+    !route.path.startsWith("/redbook")
+  ) {
+    router.push("/redbook/result");
+    return;
+  }
+
+  // 默认进入小红书图文模式灵感选题页
+  router.push("/redbook");
 }
 
 const themeOverrides: GlobalThemeOverrides = {
