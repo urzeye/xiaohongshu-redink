@@ -1,20 +1,11 @@
 {
-  "name": "redink-desktop",
+  "name": "redink",
   "version": "0.4.1",
-  "description": "RedInk · 小红书 AI 爆款创作与本地安全发布引擎 (跨平台桌面客户端)",
+  "description": "RedInk · 小红书 AI 爆款图文创作与本地安全发布引擎",
   "private": true,
   "scripts": {
-    "tauri": "tauri",
-    "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build",
-    "desktop:portable": "powershell -ExecutionPolicy Bypass -File ./scripts/package-portable.ps1",
-    "web:dev": "pnpm --dir frontend dev",
-    "web:build": "pnpm --dir frontend build"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.12.5"
-  },
-  "dependencies": {
-    "@tauri-apps/api": "^2.12.5"
+    "dev": "pnpm --dir frontend dev",
+    "build": "pnpm --dir frontend build",
+    "preview": "pnpm --dir frontend preview"
   }
 }

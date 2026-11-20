@@ -45,15 +45,6 @@ def _validate_current_request_token():
         # 兼容图片、下载等浏览器直连请求：允许通过 query 传 access_token。
         token = request.args.get('access_token', '').strip()
 
-    origin = (request.headers.get('Origin') or '').strip().rstrip('/')
-    client_ip = request.remote_addr or ''
-    is_local_ip = client_ip in ('127.0.0.1', '::1', 'localhost', 'testclient')
-    is_tauri_origin = origin in ('tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost')
-
-    # 本地 Tauri 桌面端发起的请求，若尚未传入 token 则放行
-    if not token and is_local_ip and is_tauri_origin:
-        return None
-
     if not token:
         return jsonify({
             'success': False,

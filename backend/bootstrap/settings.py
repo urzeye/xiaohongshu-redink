@@ -138,9 +138,6 @@ class AppSettings:
             "http://localhost:3000",
             "http://127.0.0.1:12398",
             "http://127.0.0.1:5173",
-            "tauri://localhost",
-            "http://tauri.localhost",
-            "https://tauri.localhost",
         ]
         user_cors = _to_list(os.getenv("REDINK_CORS_ORIGINS"), [])
         cors_origins = list(dict.fromkeys(default_cors + user_cors))

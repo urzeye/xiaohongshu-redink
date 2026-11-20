@@ -17,145 +17,44 @@
       v-else
       class="settings-container"
     >
-      <!-- 桌面客户端与本地引擎控制卡片 (在桌面端或本地模式下展示) -->
-      <div v-if="isTauri || desktopStatus" class="card desktop-status-card">
+      <!-- 快捷操作与预设管理卡片 -->
+      <div class="card">
         <div class="card-header">
           <div>
-            <h2 class="section-title">桌面客户端与本地引擎</h2>
+            <h2 class="section-title">配置与预设管理</h2>
             <p class="section-desc">
-              运行于家庭宽带环境（{{ platformInfo ? `${platformInfo.os} · ${platformInfo.arch}` : '本地桌面模式' }}），提供专属小红书安全防风控网络
+              系统已默认内置主流服务商模板，可随时重载配置或一键载入官方推荐预设
             </p>
           </div>
-          <button
-            class="btn btn-secondary btn-small"
-            @click="refreshDesktopStatus"
-            :disabled="desktopChecking"
-          >
-            {{ desktopChecking ? "检测中..." : "刷新状态" }}
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button
+              class="btn btn-secondary btn-small"
+              @click="reloadAllConfig"
+              :disabled="reloading"
+              title="外部修改配置文件后点击，无需重启服务即可热加载生效"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              {{ reloading ? "重载中..." : "重载配置文件" }}
+            </button>
+            <button
+              class="btn btn-secondary btn-small"
+              @click="resetAllDefaultPresets"
+              :disabled="resetting"
+              title="一键载入官方推荐主流服务商预设（DeepSeek、通义千问、火山方舟等），保留已有 Key"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              {{ resetting ? "载入中..." : "载入推荐预设" }}
+            </button>
+          </div>
         </div>
-
-        <div class="security-status">
-          <span
-            class="status-pill"
-            :class="desktopStatus?.is_running ? 'optional' : 'required'"
-          >
-            引擎状态：{{ desktopStatus?.is_running ? "🟢 正常运行中" : "🔴 离线/未启动" }}
-          </span>
-          <span v-if="desktopStatus?.port" class="status-pill optional">
-            监听端口：{{ desktopStatus.port }}
-          </span>
-          <span v-if="desktopStatus?.pid" class="status-pill optional">
-            PID：{{ desktopStatus.pid }}
-          </span>
-        </div>
-
-        <p class="security-hint">
-          {{ desktopStatus?.message || "本地后端与小红书自动化发布网关正在后台受控运行。" }}
-        </p>
-        <p
-          v-if="!desktopStatus?.is_running && desktopStatus?.error"
-          class="security-hint text-error"
-          style="color: #ef4444; margin-top: 6px; font-family: monospace; font-size: 13px;"
-        >
-          故障详情：{{ desktopStatus.error }}
-        </p>
-
-        <div class="token-actions" style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
-          <button
-            class="btn btn-secondary"
-            @click="handleOpenConfigFile('env')"
-            title="在系统默认编辑器中打开 .env 环境变量文件"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-            编辑底层配置 (.env)
-          </button>
-          <button
-            class="btn btn-secondary"
-            @click="handleOpenConfigFile('text_providers')"
-            title="在系统默认编辑器中打开 text_providers.yaml"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-            编辑文本服务商 (YAML)
-          </button>
-          <button
-            class="btn btn-secondary"
-            @click="handleOpenConfigFile('image_providers')"
-            title="在系统默认编辑器中打开 image_providers.yaml"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-            编辑图片服务商 (YAML)
-          </button>
-          <button
-            class="btn btn-secondary"
-            @click="handleOpenDataFolder"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            </svg>
-            打开数据目录 (data/)
-          </button>
-          <button
-            class="btn btn-secondary"
-            @click="handleOpenLogsFolder"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-            打开运行日志 (logs/)
-          </button>
-          <button
-            class="btn btn-secondary"
-            @click="reloadAllConfig"
-            :disabled="reloading"
-            title="外部修改配置文件后点击，无需重启引擎即可热加载生效"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-              <polyline points="23 4 23 10 17 10"></polyline>
-              <polyline points="1 20 1 14 7 14"></polyline>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-            {{ reloading ? "重载中..." : "重载配置文件" }}
-          </button>
-          <button
-            class="btn btn-secondary"
-            @click="resetAllDefaultPresets"
-            :disabled="resetting"
-            title="一键载入官方推荐主流服务商预设（DeepSeek、通义千问、火山方舟等），保留已有 Key"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-            {{ resetting ? "载入中..." : "载入推荐预设服务商" }}
-          </button>
-          <button
-            class="btn btn-primary"
-            @click="handleRestartBackend"
-            :disabled="desktopRestarting"
-          >
-            {{ desktopRestarting ? "正在重启..." : "重启本地引擎" }}
-          </button>
-        </div>
-        <p class="security-hint" style="margin-top: 10px; font-size: 12px; color: #64748b;">
-          💡 配置说明：系统已默认内置 DeepSeek、通义千问、火山方舟(豆包)、智谱等主流服务商模板，只需在下方对应服务商点击「编辑」填入 API Key 即可使用；如需外部手工修改 YAML 或底层环境变量（.env），可点击上方按钮一键打开编辑，保存后点击「重载配置文件」免重启生效。
+        <p class="security-hint" style="font-size: 13px; color: #64748b; margin-top: 6px;">
+          💡 提示：系统已默认内置 DeepSeek、通义千问、火山方舟(豆包)、智谱等主流服务商模板，只需在下方对应服务商卡片点击「编辑」填入 API Key 即可使用；如需外部手工修改 YAML 或 .env 文件，修改后点击右上角「重载配置文件」即可免重启生效。
         </p>
       </div>
 
@@ -600,74 +499,8 @@ import {
   imageTypeOptions,
   searchTypeOptions,
 } from "../composables/useProviderForm";
-import {
-  isTauriEnvironment,
-  getBackendStatus,
-  restartBackend,
-  openDataFolder,
-  openLogsFolder,
-  openConfigFile,
-  getPlatformInfo,
-  type BackendStatus,
-  type PlatformInfo,
-} from "../utils/tauri";
 
 const message = useMessage();
-const isTauri = ref(isTauriEnvironment());
-const desktopStatus = ref<BackendStatus | null>(null);
-const platformInfo = ref<PlatformInfo | null>(null);
-const desktopChecking = ref(false);
-const desktopRestarting = ref(false);
-
-async function refreshDesktopStatus() {
-  if (!isTauri.value) return;
-  desktopChecking.value = true;
-  try {
-    desktopStatus.value = await getBackendStatus();
-    platformInfo.value = await getPlatformInfo();
-  } finally {
-    desktopChecking.value = false;
-  }
-}
-
-async function handleOpenDataFolder() {
-  try {
-    await openDataFolder();
-    message.success("已请求系统打开数据目录");
-  } catch (e: any) {
-    message.error("打开数据目录失败: " + (e?.message || e));
-  }
-}
-
-async function handleOpenLogsFolder() {
-  try {
-    await openLogsFolder();
-    message.success("已请求系统打开日志目录");
-  } catch (e: any) {
-    message.error("打开日志目录失败: " + (e?.message || e));
-  }
-}
-
-async function handleOpenConfigFile(fileType: 'env' | 'text_providers' | 'image_providers' | 'search_providers') {
-  try {
-    await openConfigFile(fileType);
-    message.success(`已调用系统编辑器打开配置文件 (${fileType})`);
-  } catch (e: any) {
-    message.error(`打开配置文件失败: ${e?.message || e}`);
-  }
-}
-
-async function handleRestartBackend() {
-  desktopRestarting.value = true;
-  try {
-    desktopStatus.value = await restartBackend();
-    message.success("本地引擎重启成功");
-  } catch (e: any) {
-    message.error("重启后端失败: " + (e?.message || e));
-  } finally {
-    desktopRestarting.value = false;
-  }
-}
 
 const accessTokenInput = ref(getAccessToken());
 const showToken = ref(false);
@@ -967,19 +800,7 @@ async function changeSearchTimeoutSeconds(delta: number) {
 }
 
 onMounted(async () => {
-  if (isTauri.value) {
-    try {
-      const info = await getPlatformInfo();
-      platformInfo.value = info;
-      if (info?.auth_token && !getAccessToken()) {
-        setAccessToken(info.auth_token);
-        accessTokenInput.value = info.auth_token;
-      }
-    } catch (e) {
-      console.warn("获取桌面平台信息失败:", e);
-    }
-  }
-  await Promise.all([loadConfig(), refreshAuthStatus(), refreshDesktopStatus()]);
+  await Promise.all([loadConfig(), refreshAuthStatus()]);
   if (!accessTokenInput.value) {
     accessTokenInput.value = getAccessToken();
   }

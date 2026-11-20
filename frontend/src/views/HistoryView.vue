@@ -34,27 +34,6 @@
           {{ isScanning ? "同步中..." : "同步历史" }}
         </button>
         <button
-          v-if="isTauri"
-          class="btn btn-secondary"
-          @click="handleOpenHistoryFolder"
-          title="在文件资源管理器中打开历史图片目录"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="margin-right: 6px"
-          >
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-          </svg>
-          打开历史目录
-        </button>
-        <button
           class="btn btn-primary"
           @click="router.push('/redbook')"
         >
@@ -417,17 +396,6 @@ import GalleryCard from "../components/history/GalleryCard.vue";
 import ImageGalleryModal from "../components/history/ImageGalleryModal.vue";
 import OutlineModal from "../components/history/OutlineModal.vue";
 import { useMessage } from "naive-ui";
-import { isTauriEnvironment, openHistoryFolder } from "../utils/tauri";
-
-const isTauri = ref(isTauriEnvironment());
-
-async function handleOpenHistoryFolder() {
-  try {
-    await openHistoryFolder();
-  } catch (e: any) {
-    message.error("打开历史目录失败: " + (e?.message || e));
-  }
-}
 
 const router = useRouter();
 const route = useRoute();

@@ -116,10 +116,5 @@ data/xiaohongshu/*
 .impeccable/live/inject-journal.json
 .impeccable/live/roots.json
 
-# Rust & Tauri
-target/
-src-tauri/target/
-src-tauri/gen/schemas/
-release/
 
 

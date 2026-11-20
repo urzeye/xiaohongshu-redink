@@ -593,37 +593,6 @@
           </button>
 
           <div class="sidebar-footer">
-            <!-- 桌面端本地引擎状态胶囊 -->
-            <RouterLink
-              v-if="isTauri"
-              to="/settings"
-              class="desktop-engine-pill"
-              :class="{
-                'pill-running': engineStatus?.is_running,
-                'pill-starting': !engineStatus?.is_running && !engineError,
-                'pill-error': !engineStatus?.is_running && engineError,
-                collapsed: sidebarCollapsed,
-              }"
-              :title="
-                engineStatus?.is_running
-                  ? `本地引擎正常运行中 (监听端口: ${engineStatus.port})`
-                  : engineError
-                    ? `本地引擎启动失败: ${engineError}`
-                    : '本地引擎正在启动中...'
-              "
-            >
-              <span class="engine-dot"></span>
-              <span v-if="!sidebarCollapsed" class="engine-text">
-                {{
-                  engineStatus?.is_running
-                    ? `引擎就绪 :${engineStatus.port}`
-                    : engineError
-                      ? "引擎离线"
-                      : "引擎启动中..."
-                }}
-              </span>
-            </RouterLink>
-
             <div class="brand-badge">
               <div class="brand-icon">
                 <img
@@ -754,61 +723,11 @@ const toggleSidebar = () => {
   localStorage.setItem("sidebarCollapsed", String(sidebarCollapsed.value));
 };
 
-// 启用自动保存到 localStorage
-import { isTauriEnvironment, getBackendStatus, openExternalUrl, type BackendStatus } from "./utils/tauri";
-
-const isTauri = ref(isTauriEnvironment());
-const engineStatus = ref<BackendStatus | null>(null);
-const engineError = ref<string | null>(null);
-
-let enginePollTimer: any = null;
-
-async function checkEngine() {
-  if (!isTauri.value) return;
-  try {
-    const status = await getBackendStatus();
-    if (status) {
-      engineStatus.value = status;
-      engineError.value = status.error || null;
-    }
-  } catch (e: any) {
-    engineError.value = e?.message || String(e);
-  }
-}
-
 onMounted(() => {
   setupAutoSave();
   const saved = localStorage.getItem("sidebarCollapsed");
   if (saved === "true") {
     sidebarCollapsed.value = true;
-  }
-
-  if (isTauri.value) {
-    checkEngine();
-    enginePollTimer = setInterval(() => {
-      checkEngine();
-    }, 4000);
-
-    // 全局拦截外部链接，使用系统原生默认浏览器打开
-    document.addEventListener("click", (e: MouseEvent) => {
-      const target = (e.target as HTMLElement)?.closest("a");
-      if (!target) return;
-      const href = target.getAttribute("href");
-      const targetAttr = target.getAttribute("target");
-      if (href && (href.startsWith("http://") || href.startsWith("https://"))) {
-        try {
-          const parsed = new URL(href);
-          const isLocal =
-            parsed.hostname === "127.0.0.1" ||
-            parsed.hostname === "localhost" ||
-            parsed.hostname === "tauri.localhost";
-          if (!isLocal || targetAttr === "_blank") {
-            e.preventDefault();
-            openExternalUrl(href);
-          }
-        } catch {}
-      }
-    });
   }
 });
 </script>
@@ -878,69 +797,5 @@ onMounted(() => {
 .sidebar-footer {
   margin-top: 0; /* 之前是 auto，现在交给 theme-switcher 推下去了 */
   padding-top: 16px;
-}
-
-/* 桌面端本地引擎状态胶囊 */
-.desktop-engine-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  margin-bottom: 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  text-decoration: none;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  color: var(--text-sub);
-  transition: all var(--transition-fast);
-}
-
-.desktop-engine-pill:hover {
-  border-color: var(--border-hover);
-  background: var(--bg-hover);
-  color: var(--text-main);
-}
-
-.desktop-engine-pill.collapsed {
-  justify-content: center;
-  padding: 6px;
-  width: 32px;
-  height: 32px;
-  margin: 0 auto 12px;
-}
-
-.engine-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.pill-running .engine-dot {
-  background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
-}
-
-.pill-starting .engine-dot {
-  background: #f59e0b;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
-  animation: pulse 1.5s infinite ease-in-out;
-}
-
-.pill-error .engine-dot {
-  background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
-}
-
-.engine-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
 }
 </style>

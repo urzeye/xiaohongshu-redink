@@ -1,40 +1,14 @@
 import axios from 'axios'
 
-const appStartTime = Date.now()
-let dynamicPort = 12398
-
-export function updateBackendPort(port: number) {
-  if (port && port > 0 && port !== dynamicPort) {
-    dynamicPort = port
-    API_BASE_URL = getApiBaseUrl()
-  }
-}
-
-export function isTauriEnvironment(): boolean {
-  if (typeof window === 'undefined') return false
-  return Boolean(
-    (window as any).__TAURI_INTERNALS__ ||
-    (window as any).__TAURI__ ||
-    window.location.protocol === 'tauri:' ||
-    window.location.hostname === 'tauri.localhost'
-  )
-}
-
 export function getApiBaseUrl(): string {
   const envBase = (import.meta as any).env?.VITE_API_BASE_URL
   if (envBase) return String(envBase).replace(/\/+$/, '')
-  if (isTauriEnvironment()) {
-    return `http://127.0.0.1:${dynamicPort}/api`
-  }
   return '/api'
 }
 
 export function getBackendBaseUrl(): string {
   const envBase = (import.meta as any).env?.VITE_BACKEND_URL
   if (envBase) return String(envBase).replace(/\/+$/, '')
-  if (isTauriEnvironment()) {
-    return `http://127.0.0.1:${dynamicPort}`
-  }
   return ''
 }
 
@@ -42,20 +16,6 @@ export let API_BASE_URL = getApiBaseUrl()
 const ACCESS_TOKEN_KEY = 'redink_access_token'
 
 let accessToken = localStorage.getItem(ACCESS_TOKEN_KEY) || ''
-
-if (isTauriEnvironment() && typeof window !== 'undefined') {
-  import('@tauri-apps/api/core')
-    .then(({ invoke }) => invoke<any>('get_platform_info'))
-    .then((info) => {
-      if (info?.port) {
-        updateBackendPort(info.port)
-      }
-      if (info?.auth_token && !accessToken) {
-        setAccessToken(info.auth_token)
-      }
-    })
-    .catch(() => {})
-}
 
 function getAuthHeaders(): Record<string, string> {
   if (!accessToken) return {}
@@ -110,14 +70,6 @@ export function appendUrlParams(
 export function withAccessToken(rawUrl: string): string {
   if (!rawUrl) return rawUrl
   let resolvedUrl = rawUrl
-
-  // 桌面端环境兼容：相对路径且以 /api/ 或 /output/ 开头时补全后端基础地址
-  if (isTauriEnvironment() && (resolvedUrl.startsWith('/api/') || resolvedUrl.startsWith('/output/'))) {
-    const backendBase = getBackendBaseUrl()
-    if (backendBase) {
-      resolvedUrl = `${backendBase}${resolvedUrl}`
-    }
-  }
 
   if (!accessToken) return resolvedUrl
   const isAbsoluteHttp = /^https?:\/\//i.test(resolvedUrl)
@@ -178,10 +130,7 @@ function handleAxiosError(error: any, defaultMessage: string, defaultReturn: any
       return { success: false, ...defaultReturn, error: '请求超时，请检查网络连接' }
     }
     if (!error.response) {
-      if (isTauriEnvironment() && (Date.now() - appStartTime < 15000)) {
-        return { success: false, ...defaultReturn, error: '本地创作引擎正在初始化唤醒中，请稍候 3~5 秒后重试...' }
-      }
-      return { success: false, ...defaultReturn, error: '网络连接失败，请检查本地后端是否启动' }
+      return { success: false, ...defaultReturn, error: '网络连接失败，请检查本地后端服务是否启动' }
     }
     if (error.response.status === 404) {
       return { success: false, ...defaultReturn, error: '资源不存在' }

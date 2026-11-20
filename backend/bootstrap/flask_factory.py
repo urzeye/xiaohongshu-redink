@@ -41,8 +41,7 @@ def _configure_cors(app: Flask, settings: AppSettings, logger: logging.Logger) -
         return
 
     allowed_origin_patterns = [
-        r"^https?://(tauri\.localhost|localhost|127\.0\.0\.1)(:\d+)?$",
-        r"^tauri://localhost$",
+        r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     ]
     all_origins = list(dict.fromkeys(settings.cors_origins + allowed_origin_patterns))
 
@@ -66,14 +65,13 @@ def _configure_cors(app: Flask, settings: AppSettings, logger: logging.Logger) -
     def _add_cors_fallback(response):
         origin = request.headers.get("Origin")
         if origin:
-            is_desktop_or_local = (
-                origin in ("tauri://localhost", "http://tauri.localhost", "https://tauri.localhost")
-                or "://localhost" in origin
+            is_local = (
+                "://localhost" in origin
                 or "://127.0.0.1" in origin
                 or origin in settings.cors_origins
                 or "*" in settings.cors_origins
             )
-            if is_desktop_or_local and "Access-Control-Allow-Origin" not in response.headers:
+            if is_local and "Access-Control-Allow-Origin" not in response.headers:
                 response.headers["Access-Control-Allow-Origin"] = origin
                 response.headers["Access-Control-Allow-Credentials"] = "true"
                 response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
