@@ -72,7 +72,7 @@
       :stats="stats"
     />
 
-    <!-- Toolbar: Tabs & Search -->
+    <!-- Toolbar: Tabs & Search & Sort -->
     <div
       class="toolbar-wrapper card"
       style="padding: 16px 24px; margin-bottom: 24px"
@@ -104,34 +104,65 @@
         </div>
       </div>
 
-      <div class="search-mini">
-        <svg
-          class="icon"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle
-            cx="11"
-            cy="11"
-            r="8"
-          ></circle>
-          <line
-            x1="21"
-            y1="21"
-            x2="16.65"
-            y2="16.65"
-          ></line>
-        </svg>
-        <input
-          v-model="searchKeyword"
-          type="text"
-          placeholder="搜索标题..."
-          @keyup.enter="handleSearch"
-        />
+      <div class="toolbar-right">
+        <!-- 排序选择器 -->
+        <div class="sort-selector-group">
+          <span class="sort-prefix">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="21" y1="6" x2="3" y2="6"></line>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+              <line x1="9" y1="18" x2="3" y2="18"></line>
+            </svg>
+            排序
+          </span>
+          <n-select
+            v-model:value="sortBy"
+            :options="sortOptions"
+            size="small"
+            class="history-sort-select"
+            @update:value="handleSortChange"
+          />
+        </div>
+
+        <div class="search-mini">
+          <svg
+            class="icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle
+              cx="11"
+              cy="11"
+              r="8"
+            ></circle>
+            <line
+              x1="21"
+              y1="21"
+              x2="16.65"
+              y2="16.65"
+            ></line>
+          </svg>
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="搜索标题..."
+            @keyup.enter="handleSearch"
+            @input="handleSearchInput"
+          />
+        </div>
       </div>
     </div>
 
@@ -395,7 +426,7 @@ import StatsOverview from "../components/history/StatsOverview.vue";
 import GalleryCard from "../components/history/GalleryCard.vue";
 import ImageGalleryModal from "../components/history/ImageGalleryModal.vue";
 import OutlineModal from "../components/history/OutlineModal.vue";
-import { useMessage } from "naive-ui";
+import { useMessage, NSelect } from "naive-ui";
 
 const router = useRouter();
 const route = useRoute();
@@ -417,12 +448,24 @@ interface UnifiedRecord {
 
 // 数据状态
 const records = ref<UnifiedRecord[]>([]);
+const allUnifiedRecords = ref<UnifiedRecord[]>([]);
 const loading = ref(false);
 const stats = ref<any>(null);
 const currentTab = ref("all");
 const searchKeyword = ref("");
 const currentPage = ref(1);
 const totalPages = ref(1);
+
+// 排序状态与选项
+const sortBy = ref<string>("created_desc");
+const sortOptions = [
+  { label: "最新创建", value: "created_desc" },
+  { label: "最近更新", value: "updated_desc" },
+  { label: "最早创建", value: "created_asc" },
+  { label: "页数最多", value: "pages_desc" },
+  { label: "页数最少", value: "pages_asc" },
+  { label: "标题 (A-Z)", value: "title_asc" },
+];
 
 // 查看器状态
 const viewingRecord = ref<any>(null);
@@ -465,6 +508,79 @@ function convertConceptRecord(record: ConceptHistoryRecord): UnifiedRecord {
   };
 }
 
+function parseRecordTime(timeStr?: string): number {
+  if (!timeStr) return 0;
+  const t = new Date(timeStr).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+/**
+ * 排序记录列表
+ */
+function sortRecordsList(list: UnifiedRecord[], sortKey: string): UnifiedRecord[] {
+  return [...list].sort((a, b) => {
+    const timeA_create = parseRecordTime(a.created_at || a.updated_at);
+    const timeB_create = parseRecordTime(b.created_at || b.updated_at);
+    const timeA_update = parseRecordTime(a.updated_at || a.created_at);
+    const timeB_update = parseRecordTime(b.updated_at || b.created_at);
+
+    if (sortKey === "created_desc") {
+      if (timeB_create !== timeA_create) return timeB_create - timeA_create;
+      return timeB_update - timeA_update;
+    }
+    if (sortKey === "created_asc") {
+      if (timeA_create !== timeB_create) return timeA_create - timeB_create;
+      return timeA_update - timeB_update;
+    }
+    if (sortKey === "updated_desc") {
+      if (timeB_update !== timeA_update) return timeB_update - timeA_update;
+      return timeB_create - timeA_create;
+    }
+    if (sortKey === "updated_asc") {
+      if (timeA_update !== timeB_update) return timeA_update - timeB_update;
+      return timeA_create - timeB_create;
+    }
+    if (sortKey === "pages_desc") {
+      const pA = a.page_count || 0;
+      const pB = b.page_count || 0;
+      if (pB !== pA) return pB - pA;
+      return timeB_create - timeA_create;
+    }
+    if (sortKey === "pages_asc") {
+      const pA = a.page_count || 0;
+      const pB = b.page_count || 0;
+      if (pA !== pB) return pA - pB;
+      return timeB_create - timeA_create;
+    }
+    if (sortKey === "title_asc") {
+      const tA = (a.title || "").trim();
+      const tB = (b.title || "").trim();
+      const cmp = tA.localeCompare(tB, "zh-CN");
+      if (cmp !== 0) return cmp;
+      return timeB_create - timeA_create;
+    }
+    return timeB_create - timeA_create;
+  });
+}
+
+function applyCurrentPageSlice() {
+  const sorted = sortRecordsList(allUnifiedRecords.value, sortBy.value);
+  const pageSize = 12;
+  totalPages.value = Math.max(1, Math.ceil(sorted.length / pageSize));
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = 1;
+  }
+  const start = (currentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  records.value = sorted.slice(start, end);
+}
+
+function handleSortChange(value: string) {
+  sortBy.value = value;
+  currentPage.value = 1;
+  applyCurrentPageSlice();
+}
+
 /**
  * 加载历史记录列表（整合小红书和概念可视化）
  */
@@ -491,20 +607,12 @@ async function loadData() {
       allRecords.push(...conceptRes.data.records.map(convertConceptRecord));
     }
 
-    // 按更新时间倒序排序
-    allRecords.sort((a, b) => {
-      return (
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
-    });
+    const kw = searchKeyword.value.trim().toLowerCase();
+    allUnifiedRecords.value = kw
+      ? allRecords.filter((r) => r.title.toLowerCase().includes(kw))
+      : allRecords;
 
-    // 简单的前端分页
-    const pageSize = 12;
-    const start = (currentPage.value - 1) * pageSize;
-    const end = start + pageSize;
-
-    records.value = allRecords.slice(start, end);
-    totalPages.value = Math.ceil(allRecords.length / pageSize);
+    applyCurrentPageSlice();
   } catch (e) {
     console.error("加载历史记录失败:", e);
   } finally {
@@ -564,50 +672,16 @@ function switchTab(tab: string) {
 }
 
 /**
- * 搜索历史记录（搜索所有记录的标题）
+ * 搜索历史记录
  */
-async function handleSearch() {
+function handleSearch() {
+  currentPage.value = 1;
+  loadData();
+}
+
+function handleSearchInput() {
   if (!searchKeyword.value.trim()) {
-    loadData();
-    return;
-  }
-  loading.value = true;
-  try {
-    const keyword = searchKeyword.value.toLowerCase();
-
-    // 获取所有记录然后在前端过滤
-    const [xiaohongshuRes, conceptRes] = await Promise.all([
-      getHistoryList(1, 100),
-      getConceptHistoryList(1, 100),
-    ]);
-
-    const allRecords: UnifiedRecord[] = [];
-
-    if (xiaohongshuRes.success && xiaohongshuRes.records) {
-      allRecords.push(...xiaohongshuRes.records.map(convertXiaohongshuRecord));
-    }
-
-    if (conceptRes.success && conceptRes.data?.records) {
-      allRecords.push(...conceptRes.data.records.map(convertConceptRecord));
-    }
-
-    // 按标题搜索
-    const filtered = allRecords.filter((r) =>
-      r.title.toLowerCase().includes(keyword),
-    );
-
-    // 按更新时间排序
-    filtered.sort(
-      (a, b) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    );
-
-    records.value = filtered;
-    totalPages.value = 1;
-  } catch (e) {
-    console.error("搜索失败:", e);
-  } finally {
-    loading.value = false;
+    handleSearch();
   }
 }
 
@@ -794,8 +868,10 @@ async function confirmDelete(record: any) {
  * 切换页码
  */
 function changePage(p: number) {
+  if (p < 1 || p > totalPages.value) return;
   currentPage.value = p;
-  loadData();
+  applyCurrentPageSlice();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /**
@@ -960,12 +1036,40 @@ onMounted(async () => {
   margin-bottom: 24px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.sort-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-prefix {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+.history-sort-select {
+  width: 135px;
 }
 
 .search-mini {
   position: relative;
   width: 240px;
-  margin-bottom: 10px;
 }
 
 .search-mini input {

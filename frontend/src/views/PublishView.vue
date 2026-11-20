@@ -491,15 +491,47 @@
 
       <!-- 标签 -->
       <div style="margin-bottom: 24px">
-        <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px">
-          标签
-        </h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="font-size: 14px; color: var(--text-sub); margin: 0; display: flex; align-items: center; gap: 6px;">
+            <span>标签</span>
+            <span style="font-size: 12px; font-weight: normal; color: var(--text-sub); opacity: 0.85;">
+              （点击标签可复制）
+            </span>
+          </h3>
+          <button
+            v-if="store.content.tags && store.content.tags.length > 0"
+            class="btn btn-ghost"
+            style="padding: 2px 10px; font-size: 12px; height: 26px;"
+            @click="copyAllTags"
+            title="一键复制全部标签"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="margin-right: 4px;"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            复制全部
+          </button>
+        </div>
         <div style="display: flex; flex-wrap: wrap; gap: 8px">
           <span
             v-for="(tag, idx) in store.content.tags"
             :key="idx"
             class="xhs-tag"
+            :class="{ 'is-copied': copiedTagIndex === idx }"
+            @click="copySingleTag(tag, idx)"
+            :title="`点击复制 #${tag}`"
           >
+            <span v-if="copiedTagIndex === idx" class="tag-copied-icon">✓</span>
             #{{ tag }}
           </span>
         </div>
@@ -1436,6 +1468,37 @@ const handleRefreshSingleAccount = async (accId: string) => {
 
 // ---------------- 发布流程 ----------------
 
+const copiedTagIndex = ref<number | null>(null);
+
+const copySingleTag = async (tag: string, index: number) => {
+  const formattedTag = `#${tag.replace(/^#+/, "").trim()}`;
+  try {
+    await navigator.clipboard.writeText(formattedTag);
+    copiedTagIndex.value = index;
+    message.success(`已复制标签：${formattedTag}`);
+    window.setTimeout(() => {
+      if (copiedTagIndex.value === index) {
+        copiedTagIndex.value = null;
+      }
+    }, 1500);
+  } catch (err: any) {
+    message.error("复制失败: " + (err?.message || "未知错误"));
+  }
+};
+
+const copyAllTags = async () => {
+  if (!store.content.tags?.length) return;
+  const allText = store.content.tags
+    .map((t) => `#${t.replace(/^#+/, "").trim()}`)
+    .join(" ");
+  try {
+    await navigator.clipboard.writeText(allText);
+    message.success(`已复制全部 ${store.content.tags.length} 个标签`);
+  } catch (err: any) {
+    message.error("复制失败: " + (err?.message || "未知错误"));
+  }
+};
+
 const copyPostUrl = async () => {
   const url = publishResult.value?.post_url;
   if (!url) return;
@@ -1878,15 +1941,34 @@ onUnmounted(() => {
   border-radius: 16px;
   font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  gap: 4px;
+  user-select: none;
 }
 
 .xhs-tag:hover {
-  background-color: rgba(255, 36, 66, 0.15);
+  background-color: rgba(255, 36, 66, 0.16);
+  border-color: #ff2442;
   transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 36, 66, 0.15);
+}
+
+.xhs-tag:active {
+  transform: scale(0.96);
+}
+
+.xhs-tag.is-copied {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.tag-copied-icon {
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .preview-image-wrapper {

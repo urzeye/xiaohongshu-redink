@@ -73,7 +73,7 @@
       <div class="card-meta">
         <div class="meta-left">
           <span class="meta-chip">{{ record.page_count }}页</span>
-          <span class="meta-time">{{ formattedDateTime }}</span>
+          <span class="meta-time" :title="timeTooltip">{{ formattedDateTime }}</span>
         </div>
 
         <button
@@ -193,10 +193,25 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
+function formatFullTime(timeStr?: string): string {
+  if (!timeStr) return "--";
+  const d = new Date(timeStr);
+  if (Number.isNaN(d.getTime())) return timeStr;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
 const formattedDateTime = computed(() => {
-  const d = new Date(props.record.updated_at);
+  // 优先展示创建时间，以便清晰呈现创作序列
+  const timeStr = props.record.created_at || props.record.updated_at;
+  const d = new Date(timeStr);
   if (Number.isNaN(d.getTime())) return "--/-- --:--";
   return `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+});
+
+const timeTooltip = computed(() => {
+  const created = formatFullTime(props.record.created_at);
+  const updated = formatFullTime(props.record.updated_at);
+  return `创建时间：${created}\n更新时间：${updated}`;
 });
 
 const displayTitle = computed(() => {

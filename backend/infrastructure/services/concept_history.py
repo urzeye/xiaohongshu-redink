@@ -416,6 +416,15 @@ class ConceptHistoryService:
         if status:
             records = [r for r in records if r.get("status") == status]
 
+        # 默认按创建时间倒序排序（最新创建在前）
+        records.sort(
+            key=lambda r: (
+                r.get("created_at") or r.get("updated_at") or "",
+                r.get("updated_at") or "",
+            ),
+            reverse=True,
+        )
+
         # 分页
         total = len(records)
         start = (page - 1) * page_size
