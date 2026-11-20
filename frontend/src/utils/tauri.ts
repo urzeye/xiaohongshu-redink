@@ -69,6 +69,14 @@ export async function openHistoryFolder(taskId?: string): Promise<void> {
   await invoke('open_history_folder', { taskId: taskId || null });
 }
 
+export async function openConfigFile(fileType: 'env' | 'text_providers' | 'image_providers' | 'search_providers'): Promise<void> {
+  if (!isTauriEnvironment()) {
+    throw new Error('只能在桌面客户端中直接打开本地配置文件');
+  }
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('open_config_file', { fileType });
+}
+
 export async function openExternalUrl(url: string): Promise<void> {
   if (isTauriEnvironment()) {
     try {

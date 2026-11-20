@@ -73,6 +73,87 @@ pub fn open_history_folder(pm: State<ProcessManager>, task_id: Option<String>) -
 }
 
 #[tauri::command]
+pub fn open_config_file(pm: State<ProcessManager>, file_type: String) -> Result<(), String> {
+    let data_dir = pm.get_data_dir();
+    let project_root = pm.get_project_root();
+
+    let target_file = match file_type.as_str() {
+        "env" => {
+            let data_env = data_dir.join(".env");
+            let root_env = project_root.join(".env");
+            if data_env.exists() {
+                data_env
+            } else if root_env.exists() {
+                root_env
+            } else {
+                let _ = std::fs::create_dir_all(&data_dir);
+                let root_example = project_root.join(".env.example");
+                if root_example.exists() {
+                    let _ = std::fs::copy(&root_example, &data_env);
+                } else {
+                    let _ = std::fs::write(&data_env, "# RedInk Configuration
+REDINK_PORT=12398
+REDINK_LOG_LEVEL=INFO
+");
+                }
+                data_env
+            }
+        }
+        "text_providers" => {
+            let data_file = data_dir.join("text_providers.yaml");
+            let root_file = project_root.join("text_providers.yaml");
+            if data_file.exists() {
+                data_file
+            } else if root_file.exists() {
+                root_file
+            } else {
+                let _ = std::fs::create_dir_all(&data_dir);
+                let root_example = project_root.join("text_providers.yaml.example");
+                if root_example.exists() {
+                    let _ = std::fs::copy(&root_example, &data_file);
+                }
+                data_file
+            }
+        }
+        "image_providers" => {
+            let data_file = data_dir.join("image_providers.yaml");
+            let root_file = project_root.join("image_providers.yaml");
+            if data_file.exists() {
+                data_file
+            } else if root_file.exists() {
+                root_file
+            } else {
+                let _ = std::fs::create_dir_all(&data_dir);
+                let root_example = project_root.join("image_providers.yaml.example");
+                if root_example.exists() {
+                    let _ = std::fs::copy(&root_example, &data_file);
+                }
+                data_file
+            }
+        }
+        "search_providers" => {
+            let data_file = data_dir.join("search_providers.yaml");
+            let root_file = project_root.join("search_providers.yaml");
+            if data_file.exists() {
+                data_file
+            } else if root_file.exists() {
+                root_file
+            } else {
+                let _ = std::fs::create_dir_all(&data_dir);
+                let root_example = project_root.join("search_providers.yaml.example");
+                if root_example.exists() {
+                    let _ = std::fs::copy(&root_example, &data_file);
+                }
+                data_file
+            }
+        }
+        _ => return Err(format!("未知的配置文件类型: {}", file_type)),
+    };
+
+    open_file(&target_file)
+}
+
+#[tauri::command]
 pub fn open_external_url(url: String) -> Result<(), String> {
     open_url(&url)
 }
@@ -131,6 +212,54 @@ fn open_directory(path: &Path) -> Result<(), String> {
             .map_err(|e| format!("调用 xdg-open 打开目录失败: {}", e))?;
         if !status.success() {
             return Err(format!("打开目录失败，系统退出码: {:?}", status.code()));
+        }
+    }
+
+    Ok(())
+}
+
+fn open_file(path: &Path) -> Result<(), String> {
+    if !path.exists() {
+        return Err(format!("配置文件不存在: {:?}", path));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let path_str = path.to_string_lossy().to_string();
+        let mut cmd = if path.file_name().map(|n| n.to_string_lossy().starts_with(".env")).unwrap_or(false) {
+            let mut c = Command::new("notepad.exe");
+            c.arg(&path_str);
+            c
+        } else {
+            let mut c = Command::new("cmd");
+            c.args(["/c", "start", "", &path_str]);
+            c
+        };
+        cmd.creation_flags(0x08000000);
+        cmd.spawn().map_err(|e| format!("打开文件失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let status = Command::new("open")
+            .arg("-t")
+            .arg(path)
+            .status()
+            .map_err(|e| format!("调用 open 打开文件失败: {}", e))?;
+        if !status.success() {
+            return Err(format!("打开文件失败，退出码: {:?}", status.code()));
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let status = Command::new("xdg-open")
+            .arg(path)
+            .status()
+            .map_err(|e| format!("调用 xdg-open 打开文件失败: {}", e))?;
+        if !status.success() {
+            return Err(format!("打开文件失败，退出码: {:?}", status.code()));
         }
     }
 

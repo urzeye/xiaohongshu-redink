@@ -579,11 +579,26 @@ impl ProcessManager {
         let _ = std::fs::create_dir_all(&data_dir);
         let _ = std::fs::create_dir_all(&logs_dir);
 
-        // 如果 data/.env.example 不存在，且项目或资源根目录下有 .env.example，则自动复制过去作为配置模版
+        // 保证配置文件模版在 data/ 目录就绪
+        let copy_template = |filename: &str| {
+            let target = data_dir.join(filename);
+            let source = self.project_root.join(filename);
+            if !target.exists() && source.exists() {
+                let _ = std::fs::copy(&source, &target);
+            }
+        };
+
+        copy_template(".env.example");
+        copy_template("text_providers.yaml.example");
+        copy_template("image_providers.yaml.example");
+        copy_template("search_providers.yaml.example");
+
+        // 若 data/.env 不存在，自动从模版生成初始可编辑的 .env 文件
+        let data_env = data_dir.join(".env");
         let data_env_example = data_dir.join(".env.example");
-        let root_env_example = self.project_root.join(".env.example");
-        if !data_env_example.exists() && root_env_example.exists() {
-            let _ = std::fs::copy(&root_env_example, &data_env_example);
+        if !data_env.exists() && data_env_example.exists() {
+            let _ = std::fs::copy(&data_env_example, &data_env);
+            info!("[ProcessManager] Initialized default .env in data dir: {:?}", data_env);
         }
 
         let process_log_path = logs_dir.join("backend_process.log");

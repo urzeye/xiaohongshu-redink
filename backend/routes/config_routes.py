@@ -160,6 +160,96 @@ def create_config_blueprint():
                 "error": f"更新配置失败: {str(e)}"
             }, 500)
 
+    @config_bp.route('/config/reload', methods=['POST'])
+    def reload_config():
+        """
+        重新加载配置（清除内存缓存，重新读取 YAML 或环境变量）
+        """
+        try:
+            from backend.config.settings import _load_dotenv_file
+            _load_dotenv_file()
+            _clear_config_cache()
+            return get_config()
+        except Exception as e:
+            return json_response({
+                "success": False,
+                "error": f"重新加载配置失败: {str(e)}"
+            }, 500)
+
+    @config_bp.route('/config/reset-defaults', methods=['POST'])
+    @require_auth
+    def reset_defaults():
+        """
+        载入或补充推荐的主流服务商预设（非破坏性合并，保留用户已有 API Key）
+        """
+        try:
+            from backend.config.settings import Config
+            default_text = Config._default_text_providers_config()
+            default_image = Config._default_image_providers_config()
+            default_search = Config._default_search_providers_config()
+
+            current_text = config_service.load_text_providers_config()
+            current_image = config_service.load_image_providers_config()
+            current_search = config_service.load_search_providers_config()
+
+            # 非破坏性合并文本服务商：保留所有现有 key 与自定义修改
+            merged_text_providers = dict(default_text.get("providers", {}))
+            for k, v in current_text.get("providers", {}).items():
+                if k in merged_text_providers:
+                    if v.get("api_key"):
+                        merged_text_providers[k]["api_key"] = v["api_key"]
+                    if v.get("model"):
+                        merged_text_providers[k]["model"] = v["model"]
+                    if v.get("base_url"):
+                        merged_text_providers[k]["base_url"] = v["base_url"]
+                else:
+                    merged_text_providers[k] = v
+
+            current_text["providers"] = merged_text_providers
+            if not current_text.get("active_provider") or current_text.get("active_provider") not in merged_text_providers:
+                current_text["active_provider"] = default_text.get("active_provider", "deepseek")
+            config_service.save_text_providers_config(current_text)
+
+            # 非破坏性合并图片服务商
+            merged_image_providers = dict(default_image.get("providers", {}))
+            for k, v in current_image.get("providers", {}).items():
+                if k in merged_image_providers:
+                    if v.get("api_key"):
+                        merged_image_providers[k]["api_key"] = v["api_key"]
+                    if v.get("model"):
+                        merged_image_providers[k]["model"] = v["model"]
+                    if v.get("base_url"):
+                        merged_image_providers[k]["base_url"] = v["base_url"]
+                else:
+                    merged_image_providers[k] = v
+
+            current_image["providers"] = merged_image_providers
+            if not current_image.get("active_provider") or current_image.get("active_provider") not in merged_image_providers:
+                current_image["active_provider"] = default_image.get("active_provider", "siliconflow_flux")
+            config_service.save_image_providers_config(current_image)
+
+            # 非破坏性合并搜索服务商
+            merged_search_providers = dict(default_search.get("providers", {}))
+            for k, v in current_search.get("providers", {}).items():
+                if k in merged_search_providers:
+                    if v.get("api_key"):
+                        merged_search_providers[k]["api_key"] = v["api_key"]
+                    if "enabled" in v:
+                        merged_search_providers[k]["enabled"] = v["enabled"]
+                else:
+                    merged_search_providers[k] = v
+
+            current_search["providers"] = merged_search_providers
+            config_service.save_search_providers_config(current_search)
+
+            _clear_config_cache()
+            return get_config()
+        except Exception as e:
+            return json_response({
+                "success": False,
+                "error": f"载入默认预设失败: {str(e)}"
+            }, 500)
+
     # ==================== 连接测试 ====================
 
     @config_bp.route('/config/test', methods=['POST'])

@@ -64,6 +64,45 @@
         <div class="token-actions" style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
           <button
             class="btn btn-secondary"
+            @click="handleOpenConfigFile('env')"
+            title="在系统默认编辑器中打开 .env 环境变量文件"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            编辑底层配置 (.env)
+          </button>
+          <button
+            class="btn btn-secondary"
+            @click="handleOpenConfigFile('text_providers')"
+            title="在系统默认编辑器中打开 text_providers.yaml"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            编辑文本服务商 (YAML)
+          </button>
+          <button
+            class="btn btn-secondary"
+            @click="handleOpenConfigFile('image_providers')"
+            title="在系统默认编辑器中打开 image_providers.yaml"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            编辑图片服务商 (YAML)
+          </button>
+          <button
+            class="btn btn-secondary"
             @click="handleOpenDataFolder"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
@@ -84,6 +123,30 @@
             打开运行日志 (logs/)
           </button>
           <button
+            class="btn btn-secondary"
+            @click="reloadAllConfig"
+            :disabled="reloading"
+            title="外部修改配置文件后点击，无需重启引擎即可热加载生效"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            {{ reloading ? "重载中..." : "重载配置文件" }}
+          </button>
+          <button
+            class="btn btn-secondary"
+            @click="resetAllDefaultPresets"
+            :disabled="resetting"
+            title="一键载入官方推荐主流服务商预设（DeepSeek、通义千问、火山方舟等），保留已有 Key"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            {{ resetting ? "载入中..." : "载入推荐预设服务商" }}
+          </button>
+          <button
             class="btn btn-primary"
             @click="handleRestartBackend"
             :disabled="desktopRestarting"
@@ -92,7 +155,7 @@
           </button>
         </div>
         <p class="security-hint" style="margin-top: 10px; font-size: 12px; color: #64748b;">
-          💡 配置说明：服务商与模型参数可在下方界面直接修改并持久化保存；如需调整底层环境变量（如端口 REDINK_PORT、云端同步 Supabase 等），可点击「打开数据目录」创建或编辑 .env 文件（目录内已自动提供 .env.example 模版），保存后点击「重启本地引擎」生效。
+          💡 配置说明：系统已默认内置 DeepSeek、通义千问、火山方舟(豆包)、智谱等主流服务商模板，只需在下方对应服务商点击「编辑」填入 API Key 即可使用；如需外部手工修改 YAML 或底层环境变量（.env），可点击上方按钮一键打开编辑，保存后点击「重载配置文件」免重启生效。
         </p>
       </div>
 
@@ -543,6 +606,7 @@ import {
   restartBackend,
   openDataFolder,
   openLogsFolder,
+  openConfigFile,
   getPlatformInfo,
   type BackendStatus,
   type PlatformInfo,
@@ -581,6 +645,15 @@ async function handleOpenLogsFolder() {
     message.success("已请求系统打开日志目录");
   } catch (e: any) {
     message.error("打开日志目录失败: " + (e?.message || e));
+  }
+}
+
+async function handleOpenConfigFile(fileType: 'env' | 'text_providers' | 'image_providers' | 'search_providers') {
+  try {
+    await openConfigFile(fileType);
+    message.success(`已调用系统编辑器打开配置文件 (${fileType})`);
+  } catch (e: any) {
+    message.error(`打开配置文件失败: ${e?.message || e}`);
   }
 }
 
@@ -738,6 +811,10 @@ const {
   testSearchProviderInList,
   saveSearchConfig,
   updateSearchForm,
+  reloading,
+  resetting,
+  reloadAllConfig,
+  resetAllDefaultPresets,
 } = useProviderForm();
 
 type SearchConnectionState = "idle" | "testing" | "success" | "failed";

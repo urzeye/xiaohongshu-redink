@@ -217,7 +217,7 @@
           class="apikey-masked"
           :class="{ empty: !provider.api_key_masked }"
         >
-          {{ provider.api_key_masked || '未配置' }}
+          {{ provider.api_key_masked || '未配置 Key' }}
         </span>
       </div>
       <div class="col-actions">
@@ -295,6 +295,9 @@
           删除
         </n-tooltip>
       </div>
+    </div>
+    <div v-if="!providers || Object.keys(providers).length === 0" class="empty-providers-placeholder">
+      <p class="empty-hint">暂无配置的服务商。可点击右上角「添加服务商」或上方「载入推荐预设服务商」。</p>
     </div>
   </div>
 </template>
@@ -713,6 +716,14 @@ function getSearchStatusMeta(name: string, provider: Provider): { text: string; 
 .status-badge.warning {
   background: var(--color-warning-bg);
   color: var(--color-warning);
+}
+
+.empty-providers-placeholder {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 13px;
+  border-top: 1px dashed var(--border-color);
 }
 
 @media (max-width: 768px) {

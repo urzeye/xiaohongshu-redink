@@ -1,6 +1,6 @@
 import { ref, Ref } from 'vue'
 import { useMessage } from 'naive-ui'
-import { getConfig, updateConfig, testConnection, type Config } from '../api'
+import { getConfig, updateConfig, testConnection, reloadConfig as apiReloadConfig, resetDefaultPresets as apiResetDefaultPresets, type Config } from '../api'
 
 export interface Provider {
   type: string
@@ -113,6 +113,12 @@ export const textProviderPresets: Record<string, ProviderPreset> = {
     model: 'deepseek-ai/DeepSeek-V3',
     endpoint: '/v1/chat/completions'
   },
+  ark_doubao: {
+    label: '火山方舟 (豆包)',
+    base_url: 'https://ark.cn-beijing.volces.com/api/v3',
+    model: 'ep-xxxxxx-xxxx',
+    endpoint: '/chat/completions'
+  },
   openai_compatible: {
     label: '自定义 OpenAI 兼容',
     base_url: '',
@@ -159,6 +165,12 @@ export const imageProviderPresets: Record<string, ProviderPreset> = {
     label: 'Replicate',
     base_url: '',
     model: 'prunaai/z-image-turbo:0870559624690b3709350177b9d521d84e54d297026d725358b8f73193429e91'
+  },
+  ark_seedream: {
+    label: '火山方舟 (Seedream/生图)',
+    base_url: 'https://ark.cn-beijing.volces.com/api/v3',
+    model: 'ep-xxxxxx-xxxx',
+    endpoint: '/images/generations'
   },
   image_api: {
     label: '自定义 OpenAI 兼容',
@@ -246,6 +258,16 @@ function createProviderHandler(
   const isSearch = category === 'search'
 
   const activate = async (name: string) => {
+    const targetProvider = config.value.providers[name]
+    if (targetProvider) {
+      const needApiKey = !isSearch || !SEARCH_NO_KEY_REQUIRED_TYPES.has(targetProvider.type || name)
+      const hasKey = !!targetProvider._has_api_key || !!targetProvider.api_key_masked || !!targetProvider.api_key
+      if (needApiKey && !hasKey) {
+        message.warning(`服务商 "${name}" 尚未配置 API Key，请先填入 Key 即可激活使用`)
+        openEdit(name, targetProvider)
+        return
+      }
+    }
     config.value.active_provider = name
     if (isSearch && config.value.providers[name]) {
       config.value.providers[name].enabled = true
@@ -387,6 +409,13 @@ function createProviderHandler(
 
   const testInList = async (name: string, provider: Provider) => {
     try {
+      const needApiKey = !isSearch || !SEARCH_NO_KEY_REQUIRED_TYPES.has(provider.type || name)
+      const hasKey = !!provider._has_api_key || !!provider.api_key_masked || !!provider.api_key
+      if (needApiKey && !hasKey) {
+        message.warning(`服务商 "${name}" 尚未配置 API Key，请先点击「编辑」填入 Key 后再测试连接`)
+        openEdit(name, provider)
+        return false
+      }
       const payload: any = {
         type: provider.type,
         provider_name: name,
@@ -558,6 +587,53 @@ export function useProviderForm() {
     message,
     autoSaveConfig
   )
+  const reloading = ref(false)
+  const resetting = ref(false)
+
+  async function reloadAllConfig() {
+    reloading.value = true
+    try {
+      const result = await apiReloadConfig()
+      if (result.success && result.config) {
+        textConfig.value = normalizeProviderConfig(result.config.text_generation)
+        imageConfig.value = normalizeProviderConfig(result.config.image_generation)
+        searchConfig.value = normalizeSearchConfig(result.config.search)
+        message.success('配置文件已重新加载并应用')
+        return true
+      } else {
+        message.error('重载配置失败: ' + (result.error || '未知错误'))
+        return false
+      }
+    } catch (e: any) {
+      message.error('重载配置失败: ' + (e?.message || e))
+      return false
+    } finally {
+      reloading.value = false
+    }
+  }
+
+  async function resetAllDefaultPresets() {
+    resetting.value = true
+    try {
+      const result = await apiResetDefaultPresets()
+      if (result.success && result.config) {
+        textConfig.value = normalizeProviderConfig(result.config.text_generation)
+        imageConfig.value = normalizeProviderConfig(result.config.image_generation)
+        searchConfig.value = normalizeSearchConfig(result.config.search)
+        message.success('官方推荐服务商预设已载入（已保留您的原有 Key）')
+        return true
+      } else {
+        message.error('载入预设失败: ' + (result.error || '未知错误'))
+        return false
+      }
+    } catch (e: any) {
+      message.error('载入预设失败: ' + (e?.message || e))
+      return false
+    } finally {
+      resetting.value = false
+    }
+  }
+
   const searchHandler = createProviderHandler(
     searchConfig,
     searchForm,
@@ -624,7 +700,12 @@ export function useProviderForm() {
     saveSearchConfig,
     updateSearchForm: (data: ProviderForm) => {
       searchForm.value = data
-    }
+    },
+    // Config management methods
+    reloading,
+    resetting,
+    reloadAllConfig,
+    resetAllDefaultPresets
   }
 }
 

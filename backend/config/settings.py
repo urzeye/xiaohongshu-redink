@@ -99,28 +99,38 @@ def _load_dotenv_file():
         data_dir = Path(data_dir_env)
         data_env_path = data_dir / ".env"
         if data_env_path.exists():
-            load_dotenv(data_env_path)
+            load_dotenv(data_env_path, override=True)
             logger.info(f"已从数据目录加载 .env 文件: {data_env_path}")
             return
         # 保证数据目录下有 .env.example 模版供用户直接参考修改
         example_in_data = data_dir / ".env.example"
-        if not example_in_data.exists():
-            root_example = _get_project_root() / ".env.example"
-            if root_example.exists():
-                try:
-                    import shutil
+        root_example = _get_project_root() / ".env.example"
+        if not example_in_data.exists() and root_example.exists():
+            try:
+                import shutil
+                shutil.copyfile(root_example, example_in_data)
+                logger.info(f"已自动生成数据目录配置示例模版: {example_in_data}")
+            except Exception as ex:
+                logger.warning(f"复制 .env.example 到数据目录失败: {ex}")
 
-                    shutil.copyfile(root_example, example_in_data)
-                    logger.info(f"已自动生成数据目录配置示例模版: {example_in_data}")
-                except Exception as ex:
-                    logger.warning(f"复制 .env.example 到数据目录失败: {ex}")
+        # 若数据目录下无 .env，自动初始化生成一个真实可用的 .env 文件
+        src_example = example_in_data if example_in_data.exists() else root_example
+        if src_example.exists():
+            try:
+                import shutil
+                shutil.copyfile(src_example, data_env_path)
+                logger.info(f"已自动根据模版初始化数据目录 .env: {data_env_path}")
+                load_dotenv(data_env_path, override=True)
+                return
+            except Exception as ex:
+                logger.warning(f"初始化数据目录 .env 失败: {ex}")
 
     env_path = _get_project_root() / ".env"
     if env_path.exists():
-        load_dotenv(env_path)
+        load_dotenv(env_path, override=True)
         logger.info(f"已加载 .env 文件: {env_path}")
     else:
-        load_dotenv()
+        load_dotenv(override=True)
         logger.debug(f"项目根目录未找到 .env: {env_path}，已尝试从工作目录加载")
 
 
@@ -184,7 +194,11 @@ class YamlConfigStore(BaseConfigStore):
                     except Exception as ex:
                         logger.warning(f"读取示例配置文件失败: {example_path}, err={ex}")
 
-            logger.debug(f"配置文件不存在，使用默认配置: {path}")
+            logger.debug(f"配置文件不存在，使用默认配置并持久化初始化文件: {path}")
+            try:
+                self.save(config_name, default)
+            except Exception as ex:
+                logger.debug(f"持久化初始配置失败: {ex}")
             return deepcopy(default)
 
         try:
@@ -372,7 +386,158 @@ class Config:
         cls._configs.pop(cache_key, None)
 
     @classmethod
+    def _default_text_providers_config(cls) -> Dict[str, Any]:
+        """返回开箱即用的官方预设文本服务商列表（主流高性价比及常用模型）"""
+        return {
+            "active_provider": "deepseek",
+            "providers": {
+                "deepseek": {
+                    "type": "openai_compatible",
+                    "base_url": "https://api.deepseek.com",
+                    "model": "deepseek-chat",
+                    "endpoint_type": "/v1/chat/completions",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": False,
+                    "api_key": "",
+                },
+                "qwen": {
+                    "type": "openai_compatible",
+                    "base_url": "https://dashscope.aliyuncs.com/compatible-mode",
+                    "model": "qwen-turbo",
+                    "endpoint_type": "/v1/chat/completions",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": True,
+                    "api_key": "",
+                },
+                "zhipu": {
+                    "type": "openai_compatible",
+                    "base_url": "https://open.bigmodel.cn/api/paas",
+                    "model": "glm-4-flash",
+                    "endpoint_type": "/v4/chat/completions",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": False,
+                    "api_key": "",
+                },
+                "ark_doubao": {
+                    "type": "openai_compatible",
+                    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+                    "model": "ep-xxxxxx-xxxx",
+                    "endpoint_type": "/chat/completions",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": True,
+                    "api_key": "",
+                },
+                "moonshot": {
+                    "type": "openai_compatible",
+                    "base_url": "https://api.moonshot.cn",
+                    "model": "moonshot-v1-8k",
+                    "endpoint_type": "/v1/chat/completions",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": False,
+                    "api_key": "",
+                },
+                "siliconflow": {
+                    "type": "openai_compatible",
+                    "base_url": "https://api.siliconflow.cn",
+                    "model": "deepseek-ai/DeepSeek-V3",
+                    "endpoint_type": "/v1/chat/completions",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": False,
+                    "api_key": "",
+                },
+                "openai": {
+                    "type": "openai_compatible",
+                    "base_url": "https://api.openai.com",
+                    "model": "gpt-4o-mini",
+                    "endpoint_type": "/v1/chat/completions",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": True,
+                    "api_key": "",
+                },
+                "google_gemini": {
+                    "type": "google_gemini",
+                    "model": "gemini-2.0-flash-exp",
+                    "temperature": 1.0,
+                    "max_output_tokens": 8000,
+                    "supports_images": True,
+                    "api_key": "",
+                },
+            },
+        }
+
+    @classmethod
+    def _default_image_providers_config(cls) -> Dict[str, Any]:
+        """返回开箱即用的官方预设图片生成服务商列表"""
+        return {
+            "active_provider": "siliconflow_flux",
+            "providers": {
+                "siliconflow_flux": {
+                    "type": "image_api",
+                    "base_url": "https://api.siliconflow.cn",
+                    "model": "black-forest-labs/FLUX.1-schnell",
+                    "endpoint_type": "/v1/images/generations",
+                    "default_aspect_ratio": "3:4",
+                    "image_size": "1024x1024",
+                    "use_size_tag": False,
+                    "high_concurrency": False,
+                    "short_prompt": False,
+                    "api_key": "",
+                },
+                "dashscope": {
+                    "type": "dashscope",
+                    "base_url": "https://dashscope.aliyuncs.com",
+                    "model": "qwen-image-max",
+                    "size": "1104*1472",
+                    "use_style_transfer": False,
+                    "prompt_extend": True,
+                    "watermark": False,
+                    "n": 1,
+                    "api_key": "",
+                },
+                "ark_seedream": {
+                    "type": "image_api",
+                    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+                    "model": "ep-xxxxxx-xxxx",
+                    "endpoint_type": "/images/generations",
+                    "default_aspect_ratio": "3:4",
+                    "image_size": "2K",
+                    "use_size_tag": False,
+                    "high_concurrency": False,
+                    "short_prompt": False,
+                    "api_key": "",
+                },
+                "jimeng": {
+                    "type": "image_api",
+                    "base_url": "https://api.jimeng.jianying.com",
+                    "model": "jimeng-2.0-pro",
+                    "endpoint_type": "/v1/chat/completions",
+                    "use_size_tag": False,
+                    "high_concurrency": False,
+                    "short_prompt": True,
+                    "api_key": "",
+                },
+                "google_genai": {
+                    "type": "google_genai",
+                    "model": "imagen-3.0-generate-002",
+                    "high_concurrency": False,
+                    "api_key": "",
+                },
+            },
+        }
+
+    @classmethod
     def _default_provider_config(cls, default_provider: str) -> Dict[str, Any]:
+        if default_provider in ("google_gemini", "text"):
+            return cls._default_text_providers_config()
+        if default_provider in ("google_genai", "image"):
+            return cls._default_image_providers_config()
         return {"active_provider": default_provider, "providers": {}}
 
     @classmethod
@@ -380,10 +545,13 @@ class Config:
         config = cls._load_config_document(
             cache_key="image_providers",
             config_name="image_providers",
-            default=cls._default_provider_config("google_genai"),
+            default=cls._default_image_providers_config(),
         )
-        if not isinstance(config.get("providers"), dict):
-            config["providers"] = {}
+        if not isinstance(config.get("providers"), dict) or not config.get("providers"):
+            defaults = cls._default_image_providers_config()
+            config["providers"] = defaults["providers"]
+            if not config.get("active_provider"):
+                config["active_provider"] = defaults["active_provider"]
         config["active_provider"] = str(config.get("active_provider") or "").strip()
         return config
 
@@ -396,10 +564,13 @@ class Config:
         config = cls._load_config_document(
             cache_key="text_providers",
             config_name="text_providers",
-            default=cls._default_provider_config("google_gemini"),
+            default=cls._default_text_providers_config(),
         )
-        if not isinstance(config.get("providers"), dict):
-            config["providers"] = {}
+        if not isinstance(config.get("providers"), dict) or not config.get("providers"):
+            defaults = cls._default_text_providers_config()
+            config["providers"] = defaults["providers"]
+            if not config.get("active_provider"):
+                config["active_provider"] = defaults["active_provider"]
         config["active_provider"] = str(config.get("active_provider") or "").strip()
         return config
 
@@ -700,8 +871,9 @@ class Config:
 
     @classmethod
     def reload_config(cls):
-        """重新加载配置（清除缓存）"""
+        """重新加载配置（清除缓存并重新载入环境变量）"""
         logger.info("重新加载所有配置...")
+        _load_dotenv_file()
         cls._configs.clear()
         cls._store = None
         cls._store_mode = None

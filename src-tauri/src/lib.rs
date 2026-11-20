@@ -51,6 +51,7 @@ pub fn run() {
             commands::open_data_folder,
             commands::open_logs_folder,
             commands::open_history_folder,
+            commands::open_config_file,
             commands::open_external_url,
             commands::get_platform_info,
         ])

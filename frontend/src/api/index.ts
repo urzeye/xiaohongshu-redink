@@ -1111,6 +1111,24 @@ export async function testConnection(config: {
   }
 }
 
+export async function reloadConfig(): Promise<{ success: boolean; config?: Config; message?: string; error?: string }> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/config/reload`, {}, { timeout: 15000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '重新加载配置失败')
+  }
+}
+
+export async function resetDefaultPresets(): Promise<{ success: boolean; config?: Config; message?: string; error?: string }> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/config/reset-defaults`, {}, { timeout: 20000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '载入默认预设失败')
+  }
+}
+
 // ==================== 内容生成 API ====================
 
 export async function generateContent(
