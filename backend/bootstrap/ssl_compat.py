@@ -37,7 +37,6 @@ def ensure_ca_bundle() -> str | None:
     project_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).resolve().parents[2])
     search_dirs = [
         project_root / ".venv",
-        project_root / "runtime",
         project_root / "venv",
         Path(sys.prefix),
         Path(sys.base_prefix),
