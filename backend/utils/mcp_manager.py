@@ -130,19 +130,39 @@ class MCPManager:
             logger.error(f"Failed to start MCP service: {exc}")
             return False
 
-    def stop(self):
-        if not self.process:
-            return
-        try:
-            self.process.terminate()
-            self.process.wait(timeout=5)
-            logger.info("MCP service stopped")
-        except Exception as exc:
-            logger.warning(f"Failed to stop MCP service gracefully: {exc}")
-            self.process.kill()
-        finally:
-            self.process = None
-            self._session_id = None
+    def stop(self, force: bool = False):
+        if self.process:
+            try:
+                self.process.terminate()
+                self.process.wait(timeout=5)
+                logger.info("MCP service stopped")
+            except Exception as exc:
+                logger.warning(f"Failed to stop MCP service gracefully: {exc}")
+                try:
+                    self.process.kill()
+                except Exception:
+                    pass
+            finally:
+                self.process = None
+                self._session_id = None
+        elif force and self.is_running():
+            try:
+                if os.name == "nt":
+                    subprocess.run(["taskkill", "/F", "/IM", "xiaohongshu-mcp.exe"], capture_output=True)
+                else:
+                    subprocess.run(["pkill", "-f", "xiaohongshu-mcp"], capture_output=True)
+                self._session_id = None
+                logger.info("External MCP service process terminated")
+            except Exception as e:
+                logger.warning(f"Failed to kill external mcp process: {e}")
+
+    def restart(self) -> bool:
+        was_running = self.is_running()
+        self.stop(force=True)
+        time.sleep(1)
+        if was_running:
+            return self.start()
+        return True
 
     def ensure_running(self) -> bool:
         if not self.is_running():

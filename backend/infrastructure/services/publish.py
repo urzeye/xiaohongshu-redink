@@ -32,6 +32,7 @@ class PublishService:
         self.project_root = Path(os.getenv("REDINK_ROOT") or Path(__file__).resolve().parents[3])
         data_dir_env = os.getenv("REDINK_DATA_DIR")
         self.history_root_dir = Path(data_dir_env) / "history" if data_dir_env else self.project_root / "history"
+        self.data_dir = Path(data_dir_env) / "xiaohongshu" if data_dir_env else self.project_root / "data" / "xiaohongshu"
 
     @staticmethod
     def _path_exists(path: str) -> bool:
@@ -335,6 +336,13 @@ class PublishService:
             data["cookies"] = cookies
             with open(cookies_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+            if hasattr(self, "data_dir") and self.data_dir:
+                try:
+                    self.data_dir.mkdir(parents=True, exist_ok=True)
+                    with open(self.data_dir / "cookies.json", "w", encoding="utf-8") as f:
+                        json.dump(data, f, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
             logger.info("已自动同步 galaxy_creator_session_id 到 cookies.json")
             return True
         except Exception as e:
@@ -401,12 +409,22 @@ class PublishService:
             except Exception as e:
                 logger.debug(f"探测创作者个人信息失败或离线: {e}")
 
+            active_account = None
+            try:
+                from backend.infrastructure.services.account_manager import account_manager
+                active_account = account_manager.get_active_account()
+            except Exception:
+                pass
+
+            display_name = creator_username or (active_account.get("username") if active_account else None)
+
             return {
                 "has_file": True,
                 "logged_in": True,
                 "creator_authorized": True,
-                "username": creator_username,
-                "message": f"小红书及创作者中心已就绪（{creator_username}）" if creator_username else "小红书及创作者中心已就绪",
+                "username": display_name,
+                "active_account": active_account,
+                "message": f"小红书及创作者中心已就绪（{display_name}）" if display_name else "小红书及创作者中心已就绪",
             }
         except Exception as e:
             logger.warning(f"读取本地 cookies.json 失败: {e}")
@@ -431,6 +449,7 @@ class PublishService:
                     "logged_in": local_status["logged_in"],
                     "creator_authorized": local_status["creator_authorized"],
                     "username": local_status["username"],
+                    "active_account": local_status.get("active_account"),
                     "message": local_status["message"],
                 }
 
@@ -572,6 +591,11 @@ class PublishService:
             }
 
         logger.info("发布成功！")
+        try:
+            from backend.infrastructure.services.account_manager import account_manager
+            account_manager.save_current_cookies_to_active_account()
+        except Exception:
+            pass
         post_url = self._extract_post_url(result)
         return {
             "success": True,

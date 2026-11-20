@@ -431,10 +431,25 @@ export interface VibeSurfStatus {
   pid?: number | null
 }
 
+export interface XiaohongshuAccount {
+  id: string
+  username: string
+  red_num?: string
+  avatar?: string
+  alias?: string
+  is_active: boolean
+  creator_authorized?: boolean
+  status?: string
+  created_at?: string
+  updated_at?: string
+  last_used_at?: string
+}
+
 export interface LoginStatus {
   logged_in: boolean
   creator_authorized?: boolean
   username?: string
+  active_account?: XiaohongshuAccount | null
   message: string
 }
 
@@ -1231,6 +1246,7 @@ export async function checkXiaohongshuLogin(): Promise<{ success: boolean; statu
         logged_in: loggedIn,
         creator_authorized: creatorAuthorized,
         username: data.username || data.user_info?.username,
+        active_account: data.active_account || null,
         message: String(data.message || (loggedIn ? '已登录' : '未登录，请先登录小红书'))
       }
     }
@@ -1264,6 +1280,159 @@ export async function openXiaohongshuLogin(): Promise<{
     return response.data
   } catch (error) {
     return handleAxiosError(error, '打开登录页面失败')
+  }
+}
+
+// ==================== 多账号管理 API ====================
+
+export async function fetchXiaohongshuAccounts(): Promise<{
+  success: boolean
+  accounts: XiaohongshuAccount[]
+  active_account_id?: string | null
+  active_account?: XiaohongshuAccount | null
+  error?: string
+}> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/publish/accounts`, { timeout: 15000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '获取小红书账号列表失败')
+  }
+}
+
+export async function switchXiaohongshuAccount(accountId: string): Promise<{
+  success: boolean
+  message?: string
+  active_account?: XiaohongshuAccount
+  error?: string
+}> {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/publish/accounts/switch`,
+      { account_id: accountId },
+      { timeout: 30000 }
+    )
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '切换小红书账号失败')
+  }
+}
+
+export async function startAddXiaohongshuAccount(): Promise<{
+  success: boolean
+  qrcode?: string
+  timeout?: number
+  message?: string
+  error?: string
+}> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/publish/accounts/start-add`, {}, { timeout: 45000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '启动扫码添加账号失败')
+  }
+}
+
+export async function checkAddXiaohongshuAccountStatus(): Promise<{
+  success: boolean
+  logged_in?: boolean
+  account?: XiaohongshuAccount
+  message?: string
+  error?: string
+}> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/publish/accounts/check-add-status`, { timeout: 15000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '检查账号添加状态失败')
+  }
+}
+
+export async function cancelAddXiaohongshuAccount(): Promise<{
+  success: boolean
+  message?: string
+  active_account?: XiaohongshuAccount | null
+  error?: string
+}> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/publish/accounts/cancel-add`, {}, { timeout: 15000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '取消添加账号失败')
+  }
+}
+
+export async function importXiaohongshuCookies(
+  cookieInput: string,
+  alias?: string
+): Promise<{
+  success: boolean
+  message?: string
+  account?: XiaohongshuAccount
+  error?: string
+}> {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/publish/accounts/import`,
+      { cookie_input: cookieInput, alias: alias || '' },
+      { timeout: 30000 }
+    )
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '导入 Cookie 失败')
+  }
+}
+
+export async function updateXiaohongshuAccountAlias(
+  accountId: string,
+  alias: string
+): Promise<{
+  success: boolean
+  account?: XiaohongshuAccount
+  error?: string
+}> {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/publish/accounts/${accountId}`,
+      { alias },
+      { timeout: 15000 }
+    )
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '修改账号备注失败')
+  }
+}
+
+export async function deleteXiaohongshuAccount(accountId: string): Promise<{
+  success: boolean
+  message?: string
+  accounts?: XiaohongshuAccount[]
+  active_account?: XiaohongshuAccount | null
+  error?: string
+}> {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/publish/accounts/${accountId}`, { timeout: 15000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '删除小红书账号失败')
+  }
+}
+
+export async function refreshXiaohongshuAccountStatus(accountId?: string): Promise<{
+  success: boolean
+  message?: string
+  account?: XiaohongshuAccount
+  error?: string
+}> {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/publish/accounts/refresh`,
+      { account_id: accountId },
+      { timeout: 20000 }
+    )
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '刷新账号状态失败')
   }
 }
 

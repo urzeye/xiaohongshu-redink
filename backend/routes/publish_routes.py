@@ -150,6 +150,116 @@ def create_publish_blueprint():
                 "error": str(e)
             }, 500)
 
+    # ==================== 多账号管理 ====================
+
+    @publish_bp.route('/publish/accounts', methods=['GET'])
+    def list_accounts():
+        """获取所有已保存的小红书账号列表"""
+        try:
+            result = publish_application_service.list_accounts()
+            return json_response(result, 200)
+        except Exception as e:
+            logger.error(f"获取账号列表失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/switch', methods=['POST'])
+    def switch_account():
+        """切换当前发布账号"""
+        try:
+            data = request.get_json(silent=True) or {}
+            account_id = data.get("account_id")
+            if not account_id:
+                return json_response({"success": False, "error": "请提供目标账号 account_id"}, 400)
+            result = publish_application_service.switch_account(account_id)
+            status_code = 200 if result.get("success") else 400
+            return json_response(result, status_code)
+        except Exception as e:
+            logger.error(f"切换账号失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/start-add', methods=['POST'])
+    def start_add_account():
+        """开始扫码添加新账号流程"""
+        try:
+            result = publish_application_service.start_add_account()
+            status_code = 200 if result.get("success") else 500
+            return json_response(result, status_code)
+        except Exception as e:
+            logger.error(f"开始添加账号失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/check-add-status', methods=['GET'])
+    def check_add_status():
+        """检查扫码添加新账号是否完成"""
+        try:
+            result = publish_application_service.check_add_status()
+            return json_response(result, 200)
+        except Exception as e:
+            logger.error(f"检查添加账号状态失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/cancel-add', methods=['POST'])
+    def cancel_add_account():
+        """取消扫码添加账号并恢复此前活跃账号"""
+        try:
+            result = publish_application_service.cancel_add_account()
+            return json_response(result, 200)
+        except Exception as e:
+            logger.error(f"取消添加账号失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/import', methods=['POST'])
+    def import_account():
+        """通过导入 Cookie 添加账号"""
+        try:
+            data = request.get_json(silent=True) or {}
+            cookie_input = data.get("cookie_input")
+            alias = data.get("alias")
+            if not cookie_input:
+                return json_response({"success": False, "error": "Cookie 输入内容不能为空"}, 400)
+            result = publish_application_service.import_account_cookies(cookie_input, alias)
+            status_code = 200 if result.get("success") else 400
+            return json_response(result, status_code)
+        except Exception as e:
+            logger.error(f"导入 Cookie 失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/<account_id>', methods=['PUT'])
+    def update_account_alias(account_id: str):
+        """修改账号别名备注"""
+        try:
+            data = request.get_json(silent=True) or {}
+            alias = data.get("alias", "")
+            result = publish_application_service.update_account_alias(account_id, alias)
+            status_code = 200 if result.get("success") else 400
+            return json_response(result, status_code)
+        except Exception as e:
+            logger.error(f"修改账号备注失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/<account_id>', methods=['DELETE'])
+    def delete_account(account_id: str):
+        """删除指定账号"""
+        try:
+            result = publish_application_service.delete_account(account_id)
+            status_code = 200 if result.get("success") else 400
+            return json_response(result, status_code)
+        except Exception as e:
+            logger.error(f"删除账号失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
+    @publish_bp.route('/publish/accounts/refresh', methods=['POST'])
+    def refresh_account_status():
+        """刷新指定或当前账号状态"""
+        try:
+            data = request.get_json(silent=True) or {}
+            account_id = data.get("account_id")
+            result = publish_application_service.refresh_account_status(account_id)
+            return json_response(result, 200)
+        except Exception as e:
+            logger.error(f"刷新账号状态失败: {e}")
+            return json_response({"success": False, "error": str(e)}, 500)
+
     # ==================== 发布功能 ====================
 
     @publish_bp.route('/publish/xiaohongshu', methods=['POST'])

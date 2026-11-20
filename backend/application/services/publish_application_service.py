@@ -58,6 +58,58 @@ class PublishApplicationService:
         """打开小红书创作者服务中心登录页。"""
         return self._run_async(self._service.open_creator_login())
 
+    # ==================== 账号管理 ====================
+
+    def list_accounts(self) -> Dict[str, Any]:
+        """获取所有已保存的小红书账号列表"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.list_accounts()
+
+    def get_active_account(self) -> Optional[Dict[str, Any]]:
+        """获取当前活跃的发布账号"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.get_active_account()
+
+    def switch_account(self, account_id: str) -> Dict[str, Any]:
+        """切换当前发布账号"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.switch_account(account_id)
+
+    def start_add_account(self) -> Dict[str, Any]:
+        """开始扫码添加新账号流程"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return self._run_async(account_manager.start_add_account())
+
+    def check_add_status(self) -> Dict[str, Any]:
+        """检查扫码添加新账号是否完成"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.check_add_status()
+
+    def cancel_add_account(self) -> Dict[str, Any]:
+        """取消扫码添加账号并恢复此前活跃账号"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.cancel_add_account()
+
+    def import_account_cookies(self, cookie_input: str, alias: Optional[str] = None) -> Dict[str, Any]:
+        """通过导入 Cookie 添加账号"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.import_cookies(cookie_input, alias)
+
+    def update_account_alias(self, account_id: str, alias: str) -> Dict[str, Any]:
+        """修改账号别名备注"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.update_account_alias(account_id, alias)
+
+    def delete_account(self, account_id: str) -> Dict[str, Any]:
+        """删除指定账号"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.delete_account(account_id)
+
+    def refresh_account_status(self, account_id: Optional[str] = None) -> Dict[str, Any]:
+        """刷新指定或当前账号状态"""
+        from backend.infrastructure.services.account_manager import account_manager
+        return account_manager.refresh_account_status(account_id)
+
     def publish(
         self,
         title: str,

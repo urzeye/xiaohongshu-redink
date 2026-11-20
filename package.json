@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm --dir frontend dev",
     "build": "pnpm --dir frontend build",
-    "preview": "pnpm --dir frontend preview"
+    "preview": "pnpm --dir frontend preview",
+    "serve": "uv run python backend/app.py"
   }
 }
