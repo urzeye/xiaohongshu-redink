@@ -944,7 +944,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useGeneratorStore } from "../stores/generator";
 import {
   checkVibeSurfStatus,
@@ -962,6 +962,9 @@ import {
   updateXiaohongshuAccountAlias,
   deleteXiaohongshuAccount,
   refreshXiaohongshuAccountStatus,
+  getHistory,
+  getImageUrl,
+  recordHistoryPublish,
   type VibeSurfStatus,
   type LoginStatus,
   type PublishProgressEvent,
@@ -985,6 +988,7 @@ import {
 import CreationStepper from "../components/home/CreationStepper.vue";
 
 const router = useRouter();
+const route = useRoute();
 const store = useGeneratorStore();
 const message = useMessage();
 
@@ -1093,7 +1097,11 @@ const vibeSurfActionDisabled = computed(
 // ---------------- 基础导航方法 ----------------
 
 const goBack = () => {
-  router.push("/redbook/result");
+  if (store.recordId) {
+    router.push({ path: "/redbook/result", query: { recordId: store.recordId } });
+  } else {
+    router.push("/redbook/result");
+  }
 };
 
 const startNewNote = () => {
@@ -1525,6 +1533,7 @@ const startPublish = async () => {
       title: selectedTitle.value,
       content: copywriting.value,
       tags: store.content.tags,
+      record_id: store.recordId || undefined,
     },
     // onProgress
     (event: PublishProgressEvent) => {
@@ -1542,6 +1551,15 @@ const startPublish = async () => {
       if (success) {
         store.markAsPublished(event.post_url);
         message.success("小红书笔记发布成功！");
+        if (store.recordId) {
+          recordHistoryPublish(store.recordId, {
+            account_id: activeAccount.value?.id,
+            account_name: activeAccount.value?.name,
+            account_alias: activeAccount.value?.alias,
+            post_url: event.post_url,
+            published_at: new Date().toISOString(),
+          }).catch((err) => console.warn("更新历史发布记录失败:", err));
+        }
       }
       // 发布成功后刷新活跃账号
       loadAccounts();
@@ -1568,16 +1586,57 @@ const startPublish = async () => {
 // ---------------- 生命周期 ----------------
 
 onMounted(async () => {
-  if (store.isPublished) {
-    publishResult.value = {
-      success: true,
-      post_url: store.publishedUrl || undefined,
-    };
+  const targetRecordId = String(route.query.recordId || "").trim();
+  if (targetRecordId) {
+    try {
+      const res = await getHistory(targetRecordId);
+      if (res.success && res.record) {
+        store.clearPublishStatus();
+        publishResult.value = null;
+        store.setRecordId(res.record.id);
+        store.setTopic(res.record.title);
+        store.taskId = res.record.images?.task_id || null;
+        if (res.record.outline?.pages) {
+          store.setOutline(res.record.outline.raw || "", res.record.outline.pages);
+        }
+        if (res.record.content) {
+          store.setContent(
+            res.record.content.titles?.length ? res.record.content.titles : [res.record.title],
+            res.record.content.copywriting || "",
+            res.record.content.tags || []
+          );
+        } else {
+          store.setContent([res.record.title], "", []);
+        }
+        if (res.record.images?.generated?.length > 0) {
+          store.images = res.record.images.generated.map((fn, idx) => ({
+            index: idx,
+            url: fn ? getImageUrl(res.record!.images.task_id, fn) : "",
+            status: fn ? "done" : "error",
+            retryable: !fn,
+          }));
+        }
+        selectedTitle.value = store.content.titles[0] || res.record.title;
+        copywriting.value = store.content.copywriting || "";
+        if (res.record.is_published && res.record.published_accounts?.length) {
+          message.info(`该作品已发布至 @${res.record.published_accounts[0]}，可切换账号再次发布`);
+        }
+      }
+    } catch (err) {
+      console.error("加载历史记录到发布页失败:", err);
+    }
+  } else {
+    if (store.isPublished) {
+      publishResult.value = {
+        success: true,
+        post_url: store.publishedUrl || undefined,
+      };
+    }
+    if (store.content.titles.length > 0) {
+      selectedTitle.value = store.content.titles[0];
+    }
+    copywriting.value = store.content.copywriting || "";
   }
-  if (store.content.titles.length > 0) {
-    selectedTitle.value = store.content.titles[0];
-  }
-  copywriting.value = store.content.copywriting || "";
 
   // 1. 加载账号列表
   await loadAccounts();

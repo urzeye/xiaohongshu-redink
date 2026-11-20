@@ -390,6 +390,20 @@ export interface ImageJobDetail {
   items?: ImageJobItem[]
 }
 
+export interface PublishRecordItem {
+  account_id?: string
+  account_name: string
+  account_alias?: string
+  post_url?: string
+  published_at: string
+}
+
+export interface PublishInfo {
+  is_published: boolean
+  last_published_at?: string | null
+  records: PublishRecordItem[]
+}
+
 export interface HistoryRecord {
   id: string
   title: string
@@ -399,6 +413,11 @@ export interface HistoryRecord {
   thumbnail: string | null
   page_count: number
   task_id: string | null
+  is_published?: boolean
+  published_accounts?: string[]
+  last_published_at?: string
+  post_url?: string
+  publish_info?: PublishInfo
 }
 
 export interface HistoryDetail {
@@ -411,6 +430,11 @@ export interface HistoryDetail {
   content?: { titles: string[]; copywriting: string; tags: string[] }
   status: string
   thumbnail: string | null
+  is_published?: boolean
+  published_accounts?: string[]
+  last_published_at?: string
+  post_url?: string
+  publish_info?: PublishInfo
 }
 
 export interface UpdateHistoryParams {
@@ -467,6 +491,7 @@ export interface PublishData {
   title: string
   content: string
   tags: string[]
+  record_id?: string
 }
 
 export interface ContentResponse {
@@ -928,6 +953,24 @@ export async function updateHistory(
     return response.data
   } catch (error) {
     return handleAxiosError(error, '更新历史记录失败')
+  }
+}
+
+export async function recordHistoryPublish(
+  recordId: string,
+  data: {
+    account_id?: string
+    account_name?: string
+    account_alias?: string
+    post_url?: string
+    published_at?: string
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/history/${recordId}/publish-record`, data, { timeout: 10000 })
+    return response.data
+  } catch (error) {
+    return handleAxiosError(error, '记录发布信息失败')
   }
 }
 

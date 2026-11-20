@@ -23,25 +23,63 @@
 
       <!-- 悬浮操作按钮 -->
       <div class="card-overlay">
+        <!-- 核心动作：一键发布 / 再次发布 -->
+        <button
+          v-if="canPublish"
+          class="overlay-btn overlay-btn-primary"
+          @click.stop="$emit('publish', record.id)"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="btn-icon"
+          >
+            <path d="M22 2L11 13"></path>
+            <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+          </svg>
+          {{ record.is_published ? "再次发布" : "一键发布" }}
+        </button>
+
+        <!-- 次级动作：快速预览 -->
         <button
           class="overlay-btn"
           @click.stop="$emit('preview', record.id)"
         >
-          预览
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="btn-icon"
+          >
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          快速预览
         </button>
-        <button
-          class="overlay-btn"
-          @click.stop="$emit('edit', record.id)"
-        >
-          {{ record.recordType === "concept" ? "查看" : "编辑" }}
-        </button>
-        <button
-          v-if="record.recordType !== 'concept'"
-          class="overlay-btn"
-          @click.stop="$emit('result', record.id)"
-        >
-          成片
-        </button>
+
+        <!-- 细粒度操作行：编辑文案 / 成片视图 -->
+        <div class="overlay-sub-row">
+          <button
+            class="overlay-sub-btn"
+            @click.stop="$emit('edit', record.id)"
+          >
+            {{ record.recordType === "concept" ? "查看详情" : "编辑文案" }}
+          </button>
+          <button
+            v-if="record.recordType !== 'concept'"
+            class="overlay-sub-btn"
+            @click.stop="$emit('result', record.id)"
+          >
+            成片视图
+          </button>
+        </div>
       </div>
 
       <!-- 类型标识 -->
@@ -55,8 +93,12 @@
       <!-- 状态标识 -->
       <div
         class="status-badge"
-        :class="record.status"
+        :class="statusBadgeClass"
       >
+        <span
+          v-if="statusBadgeClass === 'published'"
+          class="status-dot"
+        ></span>
         {{ statusText }}
       </div>
     </div>
@@ -73,11 +115,28 @@
       <div class="card-meta">
         <div class="meta-left">
           <span class="meta-chip">{{ record.page_count }}页</span>
+          <span
+            v-if="publishedAccountLabel"
+            class="published-account-chip"
+            :title="publishedAccountTooltip"
+          >
+            <svg
+              width="8"
+              height="8"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="chip-dot"
+            >
+              <circle cx="12" cy="12" r="8" />
+            </svg>
+            {{ publishedAccountLabel }}
+          </span>
           <span class="meta-time" :title="timeTooltip">{{ formattedDateTime }}</span>
         </div>
 
         <button
           class="more-btn"
+          title="删除记录"
           @click.stop="$emit('delete', record)"
         >
           <svg
@@ -106,40 +165,64 @@ import { getImageUrl, getBackendBaseUrl, withAccessToken } from "../../api";
 /**
  * 历史记录卡片组件
  *
- * 展示单个历史记录的封面、标题、状态等信息
- * 支持预览、编辑、删除操作
+ * 展示单个历史记录的封面、标题、发布状态等信息
+ * 支持一键发布、快速预览、编辑文案、成片查看、删除等操作
  */
 
-// 定义记录类型
 interface Record {
   id: string;
   title: string;
-  status: "draft" | "completed" | "generating" | "error" | "in_progress";
+  status: "draft" | "completed" | "generating" | "error" | "in_progress" | string;
   page_count: number;
   created_at: string;
   updated_at: string;
   thumbnail?: string;
   task_id?: string;
-  recordType?: "xiaohongshu" | "concept"; // 记录来源类型
+  recordType?: "xiaohongshu" | "concept";
+  is_published?: boolean;
+  published_accounts?: string[];
+  last_published_at?: string;
+  post_url?: string;
 }
 
-// 定义 Props
 const props = defineProps<{
   record: Record;
 }>();
 
-// 定义 Emits
 defineEmits<{
   (e: "preview", id: string): void;
   (e: "edit", id: string): void;
   (e: "result", id: string): void;
+  (e: "publish", id: string): void;
   (e: "delete", record: Record): void;
 }>();
 
-/**
- * 获取状态文本
- */
+const isPublished = computed(() => {
+  return props.record.recordType !== "concept" && Boolean(props.record.is_published);
+});
+
+const canPublish = computed(() => {
+  return props.record.recordType !== "concept" && props.record.status === "completed";
+});
+
+const statusBadgeClass = computed(() => {
+  if (isPublished.value) return "published";
+  if (props.record.recordType !== "concept" && props.record.status === "completed") {
+    return "pending-publish";
+  }
+  return props.record.status;
+});
+
 const statusText = computed(() => {
+  if (isPublished.value) {
+    if (props.record.published_accounts && props.record.published_accounts.length > 0) {
+      return `已发布 · ${props.record.published_accounts[0]}`;
+    }
+    return "已发布";
+  }
+  if (props.record.recordType !== "concept" && props.record.status === "completed") {
+    return "待发布";
+  }
   const map: Record<string, string> = {
     draft: "草稿",
     completed: "已完成",
@@ -150,22 +233,34 @@ const statusText = computed(() => {
   return map[props.record.status] || props.record.status;
 });
 
+const publishedAccountLabel = computed(() => {
+  if (!isPublished.value || !props.record.published_accounts?.length) return "";
+  const first = props.record.published_accounts[0];
+  if (props.record.published_accounts.length > 1) {
+    return `@${first} +${props.record.published_accounts.length - 1}`;
+  }
+  return `@${first}`;
+});
+
+const publishedAccountTooltip = computed(() => {
+  if (!isPublished.value || !props.record.published_accounts?.length) return "";
+  const accountsStr = props.record.published_accounts.join(", ");
+  const timeStr = props.record.last_published_at
+    ? `\n最后发布时间：${formatFullTime(props.record.last_published_at)}`
+    : "";
+  return `已发布账号：${accountsStr}${timeStr}`;
+});
+
 const thumbFailed = ref(false);
 
-/**
- * 获取缩略图 URL
- * 根据记录类型返回不同的路径，缩略图失败时自动回退原图
- */
 const thumbnailUrl = computed(() => {
   if (!props.record.thumbnail || !props.record.task_id) return "";
 
   if (props.record.recordType === "concept") {
-    // 概念可视化图片路径
     return withAccessToken(
       `${getBackendBaseUrl()}/output/concepts/${props.record.task_id}/${props.record.thumbnail}`
     );
   }
-  // 小红书图文路径：优先缩略图，加载失败自动降级到原图
   return getImageUrl(
     props.record.task_id,
     props.record.thumbnail,
@@ -179,16 +274,10 @@ function handleThumbnailError() {
   }
 }
 
-/**
- * 获取类型标签
- */
 const typeLabel = computed(() => {
   return props.record.recordType === "concept" ? "概念图" : "图文";
 });
 
-/**
- * 格式化日期
- */
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -201,7 +290,6 @@ function formatFullTime(timeStr?: string): string {
 }
 
 const formattedDateTime = computed(() => {
-  // 优先展示创建时间，以便清晰呈现创作序列
   const timeStr = props.record.created_at || props.record.updated_at;
   const d = new Date(timeStr);
   if (Number.isNaN(d.getTime())) return "--/-- --:--";
@@ -281,18 +369,19 @@ const displayTitle = computed(() => {
 .card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.52);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   opacity: 0;
   transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   pointer-events: none;
   will-change: opacity;
+  padding: 16px;
 }
 
 .gallery-card:hover .card-overlay {
@@ -302,29 +391,76 @@ const displayTitle = computed(() => {
 
 /* 遮罩层按钮 */
 .overlay-btn {
-  padding: 8px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 140px;
+  padding: 8px 16px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition:
     background-color 0.2s,
     border-color 0.2s,
-    transform 0.1s,
+    transform 0.15s,
     box-shadow 0.2s;
   will-change: transform;
 }
 
 .overlay-btn:hover {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.8);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 36, 66, 0.4);
+}
+
+.overlay-btn-primary {
+  background: linear-gradient(135deg, #ff2442 0%, #ff5277 100%);
+  border-color: #ff2442;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(255, 36, 66, 0.45);
+}
+
+.overlay-btn-primary:hover {
+  background: linear-gradient(135deg, #e61e3b 0%, #ff3b65 100%);
+  border-color: #ff2442;
+  box-shadow: 0 6px 18px rgba(255, 36, 66, 0.6);
+  transform: translateY(-2px);
+}
+
+.overlay-sub-row {
+  display: flex;
+  gap: 8px;
+  width: 140px;
+}
+
+.overlay-sub-btn {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.overlay-sub-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 /* 类型标识 */
@@ -361,6 +497,25 @@ const displayTitle = computed(() => {
   background: rgba(0, 0, 0, 0.65);
   color: #ffffff;
   backdrop-filter: blur(4px);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-badge.published {
+  background: rgba(16, 185, 129, 0.92);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.pending-publish {
+  background: rgba(99, 102, 241, 0.92);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
 }
 
 .status-badge.completed {
@@ -368,7 +523,8 @@ const displayTitle = computed(() => {
 }
 
 .status-badge.draft {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(245, 158, 11, 0.9);
+  color: #ffffff;
 }
 
 .status-badge.generating,
@@ -378,6 +534,15 @@ const displayTitle = computed(() => {
 
 .status-badge.error {
   background: rgba(239, 68, 68, 0.9);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 /* 底部区域 */
@@ -410,27 +575,54 @@ const displayTitle = computed(() => {
 .meta-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .meta-chip {
   display: inline-flex;
   align-items: center;
-  height: 24px;
-  padding: 0 8px;
+  height: 22px;
+  padding: 0 7px;
   border-radius: var(--radius-xs);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-sub);
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.published-account-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 500;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  max-width: 105px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.chip-dot {
+  flex-shrink: 0;
 }
 
 .meta-time {
   color: var(--text-secondary);
   letter-spacing: 0.2px;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .more-btn {
@@ -446,6 +638,7 @@ const displayTitle = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .more-btn:hover {

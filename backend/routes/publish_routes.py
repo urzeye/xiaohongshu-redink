@@ -320,6 +320,25 @@ def create_publish_blueprint():
                     result['error'] = result['message']
                 return json_response(result, 400)
 
+            # 若携带历史记录 ID，自动关联写入发布历史
+            record_id = data.get('record_id')
+            if record_id and result.get('success'):
+                try:
+                    from backend.application.services import get_history_application_service
+                    from backend.infrastructure.services.account_manager import get_account_manager
+                    acc_mgr = get_account_manager()
+                    active_acc = acc_mgr.get_active_account()
+                    history_svc = get_history_application_service()
+                    history_svc.add_publish_record(
+                        record_id=record_id,
+                        account_id=active_acc.id if active_acc else "",
+                        account_name=active_acc.username if active_acc else "当前账号",
+                        account_alias=active_acc.alias if active_acc else "",
+                        post_url=result.get('post_url', '')
+                    )
+                except Exception as err:
+                    logger.warning(f"自动关联历史发布记录失败: {err}")
+
             return json_response(result, 200)
 
         except Exception as e:
@@ -370,6 +389,25 @@ def create_publish_blueprint():
                 if 'error' not in result and result.get('message'):
                     result['error'] = result['message']
                 return json_response(result, 400)
+
+            # 若携带历史记录 ID，自动关联写入发布历史
+            record_id = data.get('record_id')
+            if record_id and result.get('success'):
+                try:
+                    from backend.application.services import get_history_application_service
+                    from backend.infrastructure.services.account_manager import get_account_manager
+                    acc_mgr = get_account_manager()
+                    active_acc = acc_mgr.get_active_account()
+                    history_svc = get_history_application_service()
+                    history_svc.add_publish_record(
+                        record_id=record_id,
+                        account_id=active_acc.id if active_acc else "",
+                        account_name=active_acc.username if active_acc else "当前账号",
+                        account_alias=active_acc.alias if active_acc else "",
+                        post_url=result.get('post_url', '')
+                    )
+                except Exception as err:
+                    logger.warning(f"自动关联历史发布记录失败: {err}")
 
             return json_response(result, 200)
 

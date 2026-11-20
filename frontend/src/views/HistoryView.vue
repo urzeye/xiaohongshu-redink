@@ -70,6 +70,8 @@
     <StatsOverview
       v-if="stats"
       :stats="stats"
+      :active-tab="currentTab"
+      @select-tab="switchTab"
     />
 
     <!-- Toolbar: Tabs & Search & Sort -->
@@ -90,10 +92,17 @@
         </div>
         <div
           class="tab-item"
-          :class="{ active: currentTab === 'completed' }"
-          @click="switchTab('completed')"
+          :class="{ active: currentTab === 'pending' }"
+          @click="switchTab('pending')"
         >
-          已完成
+          待发布
+        </div>
+        <div
+          class="tab-item"
+          :class="{ active: currentTab === 'published' }"
+          @click="switchTab('published')"
+        >
+          已发布
         </div>
         <div
           class="tab-item"
@@ -216,6 +225,7 @@
         @preview="viewImages"
         @edit="loadRecord"
         @result="openResultPage"
+        @publish="openPublishPage"
         @delete="confirmDelete"
       />
     </div>
@@ -254,6 +264,7 @@
       @regenerate="regenerateHistoryImage"
       @downloadAll="downloadAllImages"
       @download="downloadImage"
+      @publish="openPublishPage"
     />
 
     <!-- 大纲查看模态框 -->
@@ -444,6 +455,11 @@ interface UnifiedRecord {
   page_count: number;
   task_id: string | null;
   recordType: "xiaohongshu" | "concept";
+  is_published?: boolean;
+  published_accounts?: string[];
+  last_published_at?: string;
+  post_url?: string;
+  publish_info?: any;
 }
 
 // 数据状态
@@ -488,6 +504,11 @@ function convertXiaohongshuRecord(record: HistoryRecord): UnifiedRecord {
     page_count: record.page_count,
     task_id: record.task_id,
     recordType: "xiaohongshu",
+    is_published: record.is_published,
+    published_accounts: record.published_accounts,
+    last_published_at: record.last_published_at,
+    post_url: record.post_url,
+    publish_info: record.publish_info,
   };
 }
 
@@ -587,13 +608,26 @@ function handleSortChange(value: string) {
 async function loadData() {
   loading.value = true;
   try {
-    const statusFilter =
-      currentTab.value === "all" ? undefined : currentTab.value;
+    let xiaohongshuStatusFilter: string | undefined = undefined;
+    let conceptStatusFilter: string | undefined = undefined;
+
+    if (currentTab.value === "published") {
+      xiaohongshuStatusFilter = "published";
+      conceptStatusFilter = "__none__"; // 概念图暂无发布状态
+    } else if (currentTab.value === "pending") {
+      xiaohongshuStatusFilter = "pending";
+      conceptStatusFilter = "completed";
+    } else if (currentTab.value === "draft") {
+      xiaohongshuStatusFilter = "draft";
+      conceptStatusFilter = "draft";
+    }
 
     // 并行请求两种历史记录
     const [xiaohongshuRes, conceptRes] = await Promise.all([
-      getHistoryList(1, 100, statusFilter), // 获取更多以便合并排序
-      getConceptHistoryList(1, 100, statusFilter),
+      getHistoryList(1, 100, xiaohongshuStatusFilter), // 获取更多以便合并排序
+      conceptStatusFilter === "__none__"
+        ? Promise.resolve({ success: true, data: { records: [] } })
+        : getConceptHistoryList(1, 100, conceptStatusFilter),
     ]);
 
     // 合并记录
@@ -603,8 +637,8 @@ async function loadData() {
       allRecords.push(...xiaohongshuRes.records.map(convertXiaohongshuRecord));
     }
 
-    if (conceptRes.success && conceptRes.data?.records) {
-      allRecords.push(...conceptRes.data.records.map(convertConceptRecord));
+    if (conceptRes.success && (conceptRes as any).data?.records) {
+      allRecords.push(...(conceptRes as any).data.records.map(convertConceptRecord));
     }
 
     const kw = searchKeyword.value.trim().toLowerCase();
@@ -633,14 +667,22 @@ async function loadStats() {
 
     let total = 0;
     let completed = 0;
+    let published = 0;
+    let pending = 0;
     let draft = 0;
 
     // 统计小红书记录
     if (xiaohongshuRes.success && xiaohongshuRes.records) {
       xiaohongshuRes.records.forEach((r) => {
         total++;
+        if (r.is_published) {
+          published++;
+        } else if (r.status === "completed") {
+          pending++;
+        } else if (r.status === "draft") {
+          draft++;
+        }
         if (r.status === "completed") completed++;
-        else if (r.status === "draft") draft++;
       });
     }
 
@@ -648,14 +690,18 @@ async function loadStats() {
     if (conceptRes.success && conceptRes.data?.records) {
       conceptRes.data.records.forEach((r) => {
         total++;
-        if (r.status === "completed") completed++;
-        else if (r.status === "draft" || r.status === "in_progress") draft++;
+        if (r.status === "completed") {
+          completed++;
+          pending++;
+        } else if (r.status === "draft" || r.status === "in_progress") {
+          draft++;
+        }
       });
     }
 
     stats.value = {
       total,
-      by_status: { completed, draft },
+      by_status: { completed, published, pending, draft },
     };
   } catch (e) {
     console.error("加载统计数据失败:", e);
@@ -762,6 +808,21 @@ function openResultPage(id: string) {
 
   router.push({
     path: "/redbook/result",
+    query: { recordId: id },
+  });
+}
+
+function openPublishPage(id: string) {
+  const unifiedRecord = findUnifiedRecord(id);
+
+  if (unifiedRecord?.recordType === "concept") {
+    message.info("概念图暂不支持直接发布到小红书");
+    return;
+  }
+
+  closeGallery();
+  router.push({
+    path: "/redbook/publish",
     query: { recordId: id },
   });
 }

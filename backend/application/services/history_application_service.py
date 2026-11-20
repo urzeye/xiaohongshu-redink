@@ -61,6 +61,27 @@ class HistoryApplicationService:
         """删除历史记录。"""
         return self._history_service.delete_record(record_id)
 
+    def add_publish_record(
+        self,
+        record_id: str,
+        account_id: str = "",
+        account_name: str = "",
+        account_alias: str = "",
+        post_url: str = "",
+        published_at: Optional[str] = None
+    ) -> bool:
+        """记录发布信息到历史记录"""
+        if hasattr(self._history_service, "add_publish_record"):
+            return self._history_service.add_publish_record(
+                record_id,
+                account_id=account_id,
+                account_name=account_name,
+                account_alias=account_alias,
+                post_url=post_url,
+                published_at=published_at
+            )
+        return False
+
     def search_records(self, keyword: str) -> list[Dict[str, Any]]:
         """按关键词搜索历史记录。"""
         return self._history_service.search_records(keyword)

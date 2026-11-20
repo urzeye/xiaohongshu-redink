@@ -262,6 +262,38 @@ def create_history_blueprint():
                 "error": f"更新历史记录失败。\n错误详情: {error_msg}"
             }, 500)
 
+    @history_bp.route('/history/<record_id>/publish-record', methods=['POST'])
+    def add_history_publish_record(record_id):
+        """记录发布成功结果到历史记录"""
+        try:
+            data = request.get_json(silent=True) or {}
+            account_id = data.get('account_id', '')
+            account_name = data.get('account_name', '')
+            account_alias = data.get('account_alias', '')
+            post_url = data.get('post_url', '')
+            published_at = data.get('published_at')
+
+            success = history_application_service.add_publish_record(
+                record_id,
+                account_id=account_id,
+                account_name=account_name,
+                account_alias=account_alias,
+                post_url=post_url,
+                published_at=published_at
+            )
+            if not success:
+                return json_response({
+                    "success": False,
+                    "error": f"记录发布信息失败，记录 {record_id} 不存在"
+                }, 404)
+
+            return json_response({"success": True}, 200)
+        except Exception as e:
+            return json_response({
+                "success": False,
+                "error": f"记录发布信息异常: {e}"
+            }, 500)
+
     @history_bp.route('/history/<record_id>', methods=['DELETE'])
     def delete_history(record_id):
         """

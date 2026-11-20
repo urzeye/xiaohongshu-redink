@@ -591,6 +591,66 @@ class HistoryService:
         self._save_index(index)
         return True
 
+    def add_publish_record(
+        self,
+        record_id: str,
+        account_id: str = "",
+        account_name: str = "",
+        account_alias: str = "",
+        post_url: str = "",
+        published_at: Optional[str] = None
+    ) -> bool:
+        """记录发布信息到历史记录"""
+        now = published_at or datetime.now().isoformat()
+        record = self._get_record_local(record_id)
+        if not record:
+            return False
+
+        if "publish_info" not in record or not isinstance(record.get("publish_info"), dict):
+            record["publish_info"] = {
+                "is_published": False,
+                "last_published_at": None,
+                "records": []
+            }
+
+        pub_list = record["publish_info"].setdefault("records", [])
+        entry = {
+            "account_id": str(account_id or ""),
+            "account_name": str(account_name or "当前账号"),
+            "account_alias": str(account_alias or ""),
+            "post_url": str(post_url or ""),
+            "published_at": now
+        }
+        pub_list.append(entry)
+        record["publish_info"]["is_published"] = True
+        record["publish_info"]["last_published_at"] = now
+
+        # 写回详情文件
+        record_path = self._get_record_path(record_id)
+        with open(record_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+
+        # 同步写回索引文件
+        index = self._load_index()
+        display_label = str(account_alias or account_name or "小红书账号").strip()
+        for r in index.get("records", []):
+            if r.get("id") == record_id:
+                r["is_published"] = True
+                r["last_published_at"] = now
+                accs = r.get("published_accounts")
+                if not isinstance(accs, list):
+                    accs = []
+                if display_label and display_label not in accs:
+                    accs.append(display_label)
+                r["published_accounts"] = accs
+                if post_url:
+                    r["post_url"] = str(post_url)
+                r["publish_info"] = record["publish_info"]
+                break
+
+        self._save_index(index)
+        return True
+
     def delete_record(self, record_id: str) -> bool:
         """
         删除历史记录
@@ -700,7 +760,22 @@ class HistoryService:
 
         # 按状态过滤
         if status:
-            records = [r for r in records if r.get("status") == status]
+            if status in {"published", "PUBLISHED"}:
+                records = [
+                    r for r in records
+                    if r.get("is_published") or (isinstance(r.get("publish_info"), dict) and r["publish_info"].get("is_published"))
+                ]
+            elif status in {"pending_publish", "pending", "ready"}:
+                records = [
+                    r for r in records
+                    if r.get("status") == "completed" and not (r.get("is_published") or (isinstance(r.get("publish_info"), dict) and r["publish_info"].get("is_published")))
+                ]
+            elif status in {"completed", "COMPLETED"}:
+                records = [r for r in records if r.get("status") == "completed"]
+            elif status in {"draft", "DRAFT"}:
+                records = [r for r in records if r.get("status") in {"draft", "in_progress", "partial"}]
+            elif status not in {"all", "ALL"}:
+                records = [r for r in records if r.get("status") == status]
 
         # 默认按创建时间倒序排序（最新创建在前）
         records.sort(
@@ -797,6 +872,17 @@ class HistoryService:
         for record in records:
             status = record.get("status", RecordStatus.DRAFT)
             status_count[status] = status_count.get(status, 0) + 1
+
+        published = sum(
+            1 for r in records
+            if r.get("is_published") or (isinstance(r.get("publish_info"), dict) and r["publish_info"].get("is_published"))
+        )
+        pending = sum(
+            1 for r in records
+            if r.get("status") == "completed" and not (r.get("is_published") or (isinstance(r.get("publish_info"), dict) and r["publish_info"].get("is_published")))
+        )
+        status_count["published"] = published
+        status_count["pending"] = pending
 
         return {
             "total": total,

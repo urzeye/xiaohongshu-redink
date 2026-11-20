@@ -656,6 +656,15 @@ export const useGeneratorStore = defineStore('generator', {
     },
 
     /**
+     * 清除当前发布完成状态（例如从历史记录重新调起发布时）
+     */
+    clearPublishStatus() {
+      this.isPublished = false
+      this.publishedUrl = null
+      this.saveToStorage()
+    },
+
+    /**
      * 开始生成内容（标题、文案、标签）
      * 设置状态为生成中并清除之前的错误
      */

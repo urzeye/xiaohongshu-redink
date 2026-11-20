@@ -119,3 +119,58 @@ def test_history_service_does_not_steal_claimed_task_or_draft(tmp_path: Path, mo
     assert loaded_draft is not None
     assert loaded_draft["images"]["task_id"] is None
 
+
+def test_history_service_publish_record_and_filtering(tmp_path: Path, monkeypatch):
+    """测试历史记录添加发布状态及已发布/待发布状态过滤。"""
+    history_dir = tmp_path / "history"
+    history_dir.mkdir(parents=True)
+    (history_dir / "index.json").write_text('{"records": []}', encoding="utf-8")
+
+    monkeypatch.setenv("HISTORY_STORAGE_MODE", "local")
+    service = HistoryService()
+    service.history_dir = str(history_dir)
+    service.index_file = str(history_dir / "index.json")
+
+    # 创建一条已完成记录
+    rec_id = service.create_record(
+        topic="转租房子攻略",
+        outline={"raw": "大纲", "pages": [{"index": 0}, {"index": 1}]},
+        task_id="task_rent",
+        content={"titles": ["转租攻略"], "copywriting": "正文", "tags": ["租房"]}
+    )
+    service.update_record(rec_id, status="completed", thumbnail="0.png")
+
+    # 1. 初始状态下为待发布
+    pending_list = service.list_records(1, 10, status="pending_publish")
+    assert len(pending_list["records"]) == 1
+    assert pending_list["records"][0]["id"] == rec_id
+
+    published_list = service.list_records(1, 10, status="published")
+    assert len(published_list["records"]) == 0
+
+    # 2. 添加发布记录
+    success = service.add_publish_record(
+        record_id=rec_id,
+        account_id="acc_123",
+        account_name="urzeye",
+        account_alias="主账号",
+        post_url="https://www.xiaohongshu.com/explore/673dc"
+    )
+    assert success is True
+
+    # 3. 验证单篇详情与索引中已发布标记
+    detail = service.get_record(rec_id)
+    assert detail["publish_info"]["is_published"] is True
+    assert len(detail["publish_info"]["records"]) == 1
+    assert detail["publish_info"]["records"][0]["account_name"] == "urzeye"
+
+    # 4. 验证过滤状态变化
+    pending_after = service.list_records(1, 10, status="pending_publish")
+    assert len(pending_after["records"]) == 0
+
+    published_after = service.list_records(1, 10, status="published")
+    assert len(published_after["records"]) == 1
+    assert published_after["records"][0]["is_published"] is True
+    assert "主账号" in published_after["records"][0]["published_accounts"]
+
+

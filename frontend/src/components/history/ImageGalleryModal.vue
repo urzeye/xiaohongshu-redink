@@ -34,6 +34,42 @@
               >{{ record.outline.pages.length }} 张图片 ·
               {{ formattedDate }}</span
             >
+            <span
+              v-if="record.is_published"
+              class="published-meta-badge"
+              :title="publishedAccountsTooltip"
+            >
+              <span class="badge-dot"></span>
+              已发布至 {{ publishedAccountSummary }}
+            </span>
+            <span
+              v-else-if="record.status === 'completed'"
+              class="pending-meta-badge"
+            >
+              🟣 待发布
+            </span>
+            <a
+              v-if="record.post_url"
+              :href="record.post_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="view-outline-btn post-link-btn"
+              title="前往小红书查看已发布的笔记"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              查看小红书帖子
+            </a>
             <button
               class="view-outline-btn"
               @click="$emit('showOutline')"
@@ -103,7 +139,25 @@
 
         <div class="header-actions">
           <button
-            class="btn btn-primary download-btn"
+            v-if="record.status === 'completed'"
+            class="btn btn-primary publish-direct-btn"
+            @click="$emit('publish', record.id)"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M22 2L11 13"></path>
+              <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+            </svg>
+            {{ record.is_published ? "再次发布" : "一键发布" }}
+          </button>
+          <button
+            class="btn btn-secondary download-btn"
             @click="$emit('downloadAll')"
           >
             <svg
@@ -226,6 +280,7 @@ interface ViewingRecord {
   id: string;
   title: string;
   updated_at: string;
+  status?: string;
   outline: {
     raw: string;
     pages: Array<{ type: string; content: string }>;
@@ -239,6 +294,10 @@ interface ViewingRecord {
     copywriting: string;
     tags: string[];
   };
+  is_published?: boolean;
+  published_accounts?: string[];
+  last_published_at?: string;
+  post_url?: string;
 }
 
 // 定义 Props
@@ -256,7 +315,33 @@ const emit = defineEmits<{
   (e: "downloadAll"): void;
   (e: "download", filename: string, index: number): void;
   (e: "regenerate", index: number): void;
+  (e: "publish", id: string): void;
 }>();
+
+const publishedAccountSummary = computed(() => {
+  if (!props.record?.published_accounts?.length) return "小红书";
+  return `@${props.record.published_accounts.join(", @")}`;
+});
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function formatFullTime(timeStr?: string): string {
+  if (!timeStr) return "--";
+  const d = new Date(timeStr);
+  if (Number.isNaN(d.getTime())) return timeStr;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+const publishedAccountsTooltip = computed(() => {
+  if (!props.record?.is_published) return "";
+  const accountsStr = props.record.published_accounts?.join(", ") || "小红书已绑定账号";
+  const timeStr = props.record.last_published_at
+    ? `\n发布时间：${formatFullTime(props.record.last_published_at)}`
+    : "";
+  return `已发布至：${accountsStr}${timeStr}`;
+});
 
 // 标题展开状态
 const titleExpanded = ref(false);
@@ -586,6 +671,73 @@ const formattedDate = computed(() => {
 
 .download-link:hover {
   opacity: 0.7;
+}
+
+/* 状态徽章与发布链接 */
+.published-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.pending-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.post-link-btn {
+  color: #059669 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  text-decoration: none;
+}
+
+.post-link-btn:hover {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: #10b981 !important;
+}
+
+.publish-direct-btn {
+  background: linear-gradient(135deg, #ff2442 0%, #ff5277 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 36, 66, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+}
+
+.publish-direct-btn:hover {
+  background: linear-gradient(135deg, #e61e3b 0%, #ff3b65 100%);
+  box-shadow: 0 6px 16px rgba(255, 36, 66, 0.5);
+  transform: translateY(-1px);
 }
 
 /* 响应式 */
