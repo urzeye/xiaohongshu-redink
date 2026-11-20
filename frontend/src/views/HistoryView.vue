@@ -911,18 +911,20 @@ async function copyHistoryContent(text: string, label: string) {
  * 确认删除
  */
 async function confirmDelete(record: any) {
-  if (!confirm("确定删除吗？")) return;
-
-  if (record.recordType === "concept") {
-    // 删除概念可视化记录
-    await deleteConceptHistory(record.id);
-  } else {
-    // 删除小红书记录
-    await deleteHistory(record.id);
+  try {
+    if (record.recordType === "concept") {
+      // 删除概念可视化记录
+      await deleteConceptHistory(record.id);
+    } else {
+      // 删除小红书记录
+      await deleteHistory(record.id);
+    }
+    message.success("记录已成功删除");
+    await loadData();
+    await loadStats();
+  } catch (err: any) {
+    message.error("删除失败: " + (err?.message || String(err)));
   }
-
-  loadData();
-  loadStats();
 }
 
 /**

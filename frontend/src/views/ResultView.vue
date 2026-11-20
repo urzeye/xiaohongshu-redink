@@ -19,15 +19,38 @@
           </span>
         </p>
       </div>
-      <div class="header-actions" style="display: flex; gap: 12px">
-        <button class="btn btn-secondary" @click="startOver">再来一篇</button>
+      <div class="header-actions" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <n-popconfirm
+          v-if="isGenerating"
+          positive-text="放弃并重新开始"
+          negative-text="继续生成"
+          @positive-click="handleStartOver"
+        >
+          <template #trigger>
+            <button class="btn btn-secondary">再来一篇</button>
+          </template>
+          当前图文正在后台并发生成中，重新开始将中断当前进度，确定放弃吗？
+        </n-popconfirm>
+        <button
+          v-else
+          class="btn btn-secondary"
+          @click="handleStartOver"
+        >
+          再来一篇
+        </button>
         <button
           v-if="failedCount > 0 && !isGenerating"
           class="btn btn-secondary"
           @click="retryAllFailed"
           :disabled="isRetryingAll"
         >
+          <span
+            v-if="isRetryingAll"
+            class="spinner-sm"
+            style="margin-right: 6px"
+          ></span>
           <svg
+            v-else
             width="16"
             height="16"
             viewBox="0 0 24 24"
@@ -43,43 +66,66 @@
           </svg>
           {{ isRetryingAll ? "重试中..." : `重试全部失败页 (${failedCount})` }}
         </button>
-        <button class="btn btn-secondary" @click="downloadAll" :disabled="isGenerating">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          一键下载
-        </button>
-        <button
-          class="btn btn-primary"
-          @click="goToPublish"
-          :disabled="!canPublish"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M22 2L11 13"></path>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-          发布到小红书
-        </button>
+
+        <n-tooltip trigger="hover">
+          <template #trigger>
+            <button
+              class="btn btn-secondary"
+              @click="downloadAll"
+              :disabled="isGenerating || doneCount === 0"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              一键下载
+            </button>
+          </template>
+          {{ isGenerating ? "图片后台并发生成中，完成后即可一键下载" : "打包下载所有卡片与文案" }}
+        </n-tooltip>
+
+        <n-tooltip trigger="hover">
+          <template #trigger>
+            <button
+              class="btn btn-primary"
+              @click="goToPublish"
+              :disabled="!canPublish"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M22 2L11 13"></path>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+              <span v-if="isGenerating">渲染中 ({{ store.progress.current }}/{{ store.progress.total }})...</span>
+              <span v-else>发布到小红书</span>
+            </button>
+          </template>
+          {{
+            isGenerating
+              ? "后台正在并发渲染中，请等待渲染完成"
+              : failedCount > 0
+                ? "存在失败图片，请重试失败页后再发布"
+                : "全套图文已就绪，一键前往小红书发布中心"
+          }}
+        </n-tooltip>
       </div>
     </div>
 
@@ -126,7 +172,7 @@
           <div
             v-if="image.url"
             class="result-image-wrap"
-            @click="openPreview(image.url)"
+            @click="openPreview(image.index)"
           >
             <img
               :src="image.url"
@@ -165,6 +211,7 @@
               class="overlay-regenerate-btn floating-regenerate-btn always-visible"
               @click.stop="handleRegenerate(image)"
               :disabled="regeneratingIndex === image.index || isGenerating"
+              :title="isGenerating ? '正在并发渲染全组中，请稍候' : '重绘此页'"
             >
               <svg
                 width="14"
@@ -236,16 +283,108 @@
       </div>
     </div>
 
-    <div v-if="previewVisible" class="preview-modal" @click="closePreview">
-      <button class="preview-close" type="button" @click.stop="closePreview">
-        x
+    <!-- 全屏沉浸式图片预览画廊 (Lightbox) -->
+    <div
+      v-if="previewVisible"
+      class="preview-modal"
+      @click="closePreview"
+      role="dialog"
+      aria-modal="true"
+      aria-label="图片全屏画廊预览"
+    >
+      <div class="preview-header-bar" @click.stop>
+        <div class="preview-counter">
+          Page {{ (currentPreviewImage?.index ?? previewIndex) + 1 }} / {{ store.images.length }}
+        </div>
+        <div class="preview-actions">
+          <button
+            class="preview-action-btn"
+            type="button"
+            @click.stop="downloadCurrentPreview"
+            title="下载此页原图"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>下载</span>
+          </button>
+          <button
+            class="preview-action-btn preview-close-btn"
+            type="button"
+            @click.stop="closePreview"
+            title="关闭 (ESC)"
+            aria-label="关闭预览"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 上一张 -->
+      <button
+        v-if="hasPrevPreview"
+        class="preview-nav-btn prev-btn"
+        type="button"
+        @click.stop="previewPrev"
+        title="上一张 (←)"
+        aria-label="上一张图片"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
       </button>
-      <img
-        class="preview-image"
-        :src="previewImageUrl"
-        alt="预览大图"
-        @click.stop
-      />
+
+      <!-- 居中大图 -->
+      <div class="preview-image-container" @click.stop>
+        <img
+          class="preview-image"
+          :src="currentPreviewUrl"
+          :alt="`第 ${(currentPreviewImage?.index ?? previewIndex) + 1} 页`"
+        />
+      </div>
+
+      <!-- 下一张 -->
+      <button
+        v-if="hasNextPreview"
+        class="preview-nav-btn next-btn"
+        type="button"
+        @click.stop="previewNext"
+        title="下一张 (→)"
+        aria-label="下一张图片"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
     </div>
 
     <ContentDisplay />
@@ -564,39 +703,121 @@
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.preview-header-bar {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2010;
+}
+
+.preview-counter {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-radius: 99px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preview-action-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.preview-close-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  font-size: 15px;
+}
+
+.preview-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2010;
+  transition: all var(--transition-fast);
+}
+
+.preview-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.preview-nav-btn.prev-btn {
+  left: 24px;
+}
+
+.preview-nav-btn.next-btn {
+  right: 24px;
+}
+
+.preview-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 85vh;
 }
 
 .preview-image {
-  max-width: min(1100px, 95vw);
-  max-height: 90vh;
+  max-width: min(1000px, 90vw);
+  max-height: 85vh;
   object-fit: contain;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
-}
-
-.preview-close {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.preview-close:hover {
-  background: rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+  background: #111;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
 }
 
 @media (max-width: 768px) {
@@ -632,7 +853,7 @@ import {
 } from "../api";
 import ContentDisplay from "../components/result/ContentDisplay.vue";
 import CreationStepper from "../components/home/CreationStepper.vue";
-import { useMessage } from "naive-ui";
+import { useMessage, NTooltip, NPopconfirm } from "naive-ui";
 
 const router = useRouter();
 const route = useRoute();
@@ -644,8 +865,29 @@ const isRetryingAll = ref(false);
 const errorText = ref("");
 const pollingActive = ref(false);
 const previewVisible = ref(false);
-const previewImageUrl = ref("");
+const previewIndex = ref(0);
 let stopPolling = false;
+
+const validImages = computed(() => {
+  return store.images.filter((img) => Boolean(img.url));
+});
+
+const currentPreviewImage = computed(() => {
+  return validImages.value[previewIndex.value] || null;
+});
+
+const currentPreviewUrl = computed(() => {
+  if (!currentPreviewImage.value?.url) return "";
+  const baseUrl = currentPreviewImage.value.url.split("?")[0];
+  return appendUrlParams(withAccessToken(baseUrl), {
+    thumbnail: false,
+  });
+});
+
+const hasPrevPreview = computed(() => previewIndex.value > 0);
+const hasNextPreview = computed(
+  () => previewIndex.value < validImages.value.length - 1,
+);
 
 const resumePolling = async () => {
   stopPolling = false;
@@ -673,26 +915,52 @@ const canPublish = computed(() => {
   );
 });
 
-const openPreview = (url: string) => {
-  const baseUrl = url.split("?")[0];
-  previewImageUrl.value = appendUrlParams(withAccessToken(baseUrl), {
-    thumbnail: false,
-  });
+const openPreview = (pageIndex: number) => {
+  const targetIdx = validImages.value.findIndex(
+    (img) => img.index === pageIndex,
+  );
+  if (targetIdx >= 0) {
+    previewIndex.value = targetIdx;
+  } else {
+    previewIndex.value = 0;
+  }
   previewVisible.value = true;
 };
 
 const closePreview = () => {
   previewVisible.value = false;
-  previewImageUrl.value = "";
 };
 
-const onPreviewKeydown = (event: KeyboardEvent) => {
-  if (event.key === "Escape" && previewVisible.value) {
-    closePreview();
+const previewPrev = () => {
+  if (hasPrevPreview.value) {
+    previewIndex.value -= 1;
   }
 };
 
-const startOver = () => {
+const previewNext = () => {
+  if (hasNextPreview.value) {
+    previewIndex.value += 1;
+  }
+};
+
+const downloadCurrentPreview = () => {
+  if (currentPreviewImage.value) {
+    downloadOne(currentPreviewImage.value);
+  }
+};
+
+const onPreviewKeydown = (event: KeyboardEvent) => {
+  if (!previewVisible.value) return;
+  if (event.key === "Escape") {
+    closePreview();
+  } else if (event.key === "ArrowLeft") {
+    previewPrev();
+  } else if (event.key === "ArrowRight") {
+    previewNext();
+  }
+};
+
+const handleStartOver = () => {
   store.reset();
   router.push("/redbook");
 };

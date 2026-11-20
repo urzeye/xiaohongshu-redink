@@ -538,15 +538,31 @@
       </div>
 
       <!-- 发布按钮 -->
-      <div style="display: flex; gap: 12px">
-        <button
-          class="btn btn-primary"
-          style="flex: 1; padding: 14px; font-size: 16px"
-          :disabled="!canPublish || isPublishing"
-          @click="startPublish"
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <n-tooltip trigger="hover" :disabled="!publishBlockReason">
+          <template #trigger>
+            <button
+              class="btn btn-primary"
+              style="width: 100%; padding: 14px; font-size: 16px"
+              :disabled="!canPublish || isPublishing"
+              @click="startPublish"
+            >
+              <span
+                v-if="isPublishing"
+                class="spinner-sm"
+                style="margin-right: 8px"
+              ></span>
+              {{ isPublishing ? "正在安全发布至小红书..." : "确认发布到小红书" }}
+            </button>
+          </template>
+          {{ publishBlockReason }}
+        </n-tooltip>
+        <span
+          v-if="publishBlockReason && !isPublishing"
+          class="publish-block-hint"
         >
-          {{ isPublishing ? "发布中..." : "确认发布" }}
-        </button>
+          💡 {{ publishBlockReason }}
+        </span>
       </div>
 
       <!-- 发布进度 -->
@@ -972,6 +988,7 @@ import {
 } from "../api";
 import {
   useMessage,
+  NTooltip,
   NImage,
   NImageGroup,
   NSelect,
@@ -1064,6 +1081,20 @@ const canPublish = computed(() => {
     selectedTitle.value &&
     copywriting.value
   );
+});
+
+const publishBlockReason = computed(() => {
+  if (isPublishing.value) return "正在发布到小红书平台中，请勿重复操作";
+  if (!vibeSurfStatus.value?.running) return "VibeSurf 浏览器自动化服务未启动";
+  if (!loginStatus.value?.logged_in) return "小红书账号未登录，请先添加并扫码登录";
+  const hasAccountReady = Boolean(
+    activeAccount.value?.creator_authorized ?? loginStatus.value?.creator_authorized
+  );
+  if (!hasAccountReady) return "创作者中心未授权，请点击上方「授权创作者中心」";
+  if (store.images.length === 0) return "暂无已完成的图文素材";
+  if (!selectedTitle.value) return "请选择或输入小红书笔记标题";
+  if (!copywriting.value) return "正文文案不能为空";
+  return "";
 });
 
 const canStartService = computed(() => {
@@ -2274,5 +2305,12 @@ onUnmounted(() => {
   color: var(--text-sub);
   line-height: 1.5;
   margin-bottom: 20px;
+}
+
+.publish-block-hint {
+  font-size: 13px;
+  color: var(--color-warning, #f59e0b);
+  line-height: 1.5;
+  text-align: center;
 }
 </style>

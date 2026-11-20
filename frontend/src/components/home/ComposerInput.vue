@@ -245,12 +245,12 @@
           class="btn btn-primary generate-btn"
           @click="$emit('generate')"
           :disabled="!modelValue.trim() || loading"
-          title="生成大纲 (按 Enter 直接触发)"
+          :title="loading ? '正在智能规划大纲中...' : '生成大纲 (按 Enter 直接触发)'"
         >
-          <span
-            v-if="loading"
-            class="spinner-sm"
-          ></span>
+          <template v-if="loading">
+            <span class="spinner-sm"></span>
+            <span>规划大纲中...</span>
+          </template>
           <template v-else>
             <span>生成大纲</span>
             <span class="btn-kbd">↵</span>
@@ -398,6 +398,7 @@ function handleInput(event: Event) {
  */
 function handleEnter(e: KeyboardEvent) {
   if (e.shiftKey) return; // 允许 Shift+Enter 换行
+  if (props.loading || !props.modelValue.trim()) return; // 规划中或输入为空时防重复触发
   emit("generate");
 }
 

@@ -231,6 +231,20 @@ function handleModeSelect(mode: 'redbook' | 'concept') {
   background: var(--primary);
   color: #ffffff;
   line-height: 1;
+  box-shadow: 0 0 8px rgba(255, 36, 66, 0.4);
+  animation: badgeGlow 2.4s infinite ease-in-out;
+}
+
+@keyframes badgeGlow {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+    box-shadow: 0 0 12px rgba(255, 36, 66, 0.65);
+  }
 }
 
 /* 页脚 */

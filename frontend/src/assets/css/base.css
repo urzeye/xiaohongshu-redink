@@ -513,19 +513,34 @@ a:hover {
 }
 
 /* ========== 页面切换过渡 ========== */
-.page-fade-enter-active,
+.page-fade-enter-active {
+  transition: opacity 0.24s var(--ease-out), transform 0.24s var(--ease-out);
+}
+
 .page-fade-leave-active {
-  transition: opacity 0.22s var(--transition-base), transform 0.22s var(--transition-base);
+  transition: opacity 0.16s ease-in, transform 0.16s ease-in;
 }
 
 .page-fade-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(6px) scale(0.998);
 }
 
 .page-fade-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition: opacity 0.1s linear !important;
+    transform: none !important;
+  }
+  .page-fade-enter-from,
+  .page-fade-leave-to {
+    transform: none !important;
+  }
 }
 
 /* ========== 响应式断点 ========== */

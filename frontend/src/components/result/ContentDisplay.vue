@@ -32,8 +32,28 @@
       v-else-if="content.status === 'generating'"
       class="loading-section"
     >
-      <div class="loading-spinner"></div>
-      <p>正在生成标题、文案和标签...</p>
+      <div class="loading-header">
+        <div class="loading-spinner"></div>
+        <p>正在智能撰写爆款标题、正文与话题标签...</p>
+      </div>
+      <div class="skeleton-preview-cards">
+        <div class="skeleton-card">
+          <div class="skeleton-bar title-bar"></div>
+          <div class="skeleton-bar title-sub"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-bar body-bar"></div>
+          <div class="skeleton-bar body-bar short"></div>
+          <div class="skeleton-bar body-bar"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-tags-row">
+            <span class="skeleton-tag"></span>
+            <span class="skeleton-tag"></span>
+            <span class="skeleton-tag"></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 错误状态 -->
@@ -470,6 +490,7 @@ async function copyTitles() {
   const text = content.value.titles.join("\n");
   if (await copyToClipboard(text)) {
     copiedTitles.value = true;
+    message.success("已复制全部备选标题");
     setTimeout(() => (copiedTitles.value = false), 2000);
   }
 }
@@ -478,6 +499,7 @@ async function copyTitles() {
 async function copyTitle(title: string, index: number) {
   if (await copyToClipboard(title)) {
     copiedTitleIndex.value = index;
+    message.success(`已复制标题: ${title.slice(0, 16)}...`);
     setTimeout(() => (copiedTitleIndex.value = null), 2000);
   }
 }
@@ -486,6 +508,7 @@ async function copyTitle(title: string, index: number) {
 async function copyCopywriting() {
   if (await copyToClipboard(content.value.copywriting)) {
     copiedCopywriting.value = true;
+    message.success("已复制正文文案");
     setTimeout(() => (copiedCopywriting.value = false), 2000);
   }
 }
@@ -495,6 +518,7 @@ async function copyTags() {
   const text = content.value.tags.map((t) => `#${t}`).join(" ");
   if (await copyToClipboard(text)) {
     copiedTags.value = true;
+    message.success("已复制全部话题标签");
     setTimeout(() => (copiedTags.value = false), 2000);
   }
 }
@@ -503,6 +527,7 @@ async function copyTags() {
 async function copyFullContent() {
   if (await copyToClipboard(fullContentText.value)) {
     copiedFullContent.value = true;
+    message.success("已复制全套图文文案（标题+正文+标签）");
     setTimeout(() => (copiedFullContent.value = false), 2000);
   }
 }
@@ -550,60 +575,96 @@ async function copyTag(rawTag: string, index: number) {
 
 .loading-section {
   text-align: center;
-  padding: 60px 20px;
+  padding: 40px 24px;
   background: var(--bg-card);
   border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
 }
 
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-.loading-section p {
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
-  border: 2px dashed var(--border-color);
-}
-
-.generate-btn {
-  display: inline-flex;
+.loading-header {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 32px;
-  font-size: 16px;
-}
-
-.generate-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.loading-section {
-  text-align: center;
-  padding: 60px 20px;
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
 .loading-spinner {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border: 3px solid var(--border-color);
   border-top-color: var(--primary);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
+  animation: spin 0.9s linear infinite;
 }
 
-.loading-section p {
+.loading-header p {
   color: var(--text-sub);
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.skeleton-preview-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.skeleton-card {
+  padding: 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-bar {
+  height: 14px;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+.title-bar {
+  height: 18px;
+  width: 70%;
+}
+
+.title-sub {
+  height: 14px;
+  width: 45%;
+}
+
+.body-bar {
+  width: 95%;
+}
+
+.body-bar.short {
+  width: 60%;
+}
+
+.skeleton-tags-row {
+  display: flex;
+  gap: 8px;
+}
+
+.skeleton-tag {
+  height: 24px;
+  width: 72px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-card);
+  animation: shimmer 1.6s infinite ease-in-out;
 }
 
 .error-section {

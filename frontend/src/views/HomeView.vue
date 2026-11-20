@@ -389,6 +389,7 @@ async function persistOutlineHistory(
  * 生成大纲
  */
 async function handleGenerate() {
+  if (loading.value) return;
   const rawTopic = topic.value.trim();
   if (!rawTopic) return;
 

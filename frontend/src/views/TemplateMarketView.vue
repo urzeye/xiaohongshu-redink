@@ -143,14 +143,21 @@
             <button
               class="btn btn-secondary action-btn"
               @click="openPreview(item)"
+              :disabled="applying"
             >
               预览模板
             </button>
             <button
               class="btn btn-primary action-btn"
               @click="useTemplate(item)"
+              :disabled="applying"
             >
-              使用模板
+              <span
+                v-if="applyingTemplateId === item.id"
+                class="spinner-sm"
+                style="margin-right: 4px"
+              ></span>
+              {{ applyingTemplateId === item.id ? "载入中..." : "使用模板" }}
             </button>
           </div>
         </div>
@@ -191,6 +198,7 @@ const error = ref("");
 const previewVisible = ref(false);
 const activeTemplate = ref<TemplateItem | null>(null);
 const applying = ref(false);
+const applyingTemplateId = ref<string | null>(null);
 
 const normalizedCategory = computed(() =>
   selectedCategory.value === "全部" ? "" : selectedCategory.value,
@@ -254,6 +262,7 @@ function closePreview() {
 }
 
 async function useTemplate(template: TemplateItem) {
+  applyingTemplateId.value = template.id;
   applying.value = true;
   try {
     await router.push({
@@ -262,6 +271,7 @@ async function useTemplate(template: TemplateItem) {
     });
   } finally {
     applying.value = false;
+    applyingTemplateId.value = null;
     closePreview();
   }
 }

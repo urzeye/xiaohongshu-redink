@@ -26,9 +26,15 @@
         <button
           class="btn btn-primary"
           @click="startGeneration"
-          :disabled="revising"
+          :disabled="revising || isStartingGeneration || store.outline.pages.length === 0"
         >
+          <span
+            v-if="isStartingGeneration"
+            class="spinner-sm"
+            style="margin-right: 6px"
+          ></span>
           <svg
+            v-else
             width="16"
             height="16"
             viewBox="0 0 24 24"
@@ -53,7 +59,7 @@
               y2="15"
             ></line>
           </svg>
-          开始生成图片
+          <span>{{ isStartingGeneration ? "准备并行渲染中..." : "开始生成图片" }}</span>
         </button>
       </div>
     </div>
@@ -232,12 +238,16 @@
               拖拽排序
             </n-tooltip>
 
-            <n-tooltip trigger="hover">
+            <n-popconfirm
+              @positive-click="deletePage(idx)"
+              positive-text="确认删除"
+              negative-text="取消"
+            >
               <template #trigger>
                 <button
                   class="icon-btn danger"
-                  @click="deletePage(idx)"
-                  :disabled="isPageLoading(page.index)"
+                  :disabled="isPageLoading(page.index) || store.outline.pages.length <= 1"
+                  :title="store.outline.pages.length <= 1 ? '至少需要保留 1 页大纲' : '删除此页'"
                 >
                   <svg
                     width="14"
@@ -262,8 +272,8 @@
                   </svg>
                 </button>
               </template>
-              删除此页
-            </n-tooltip>
+              确定要删除第 {{ idx + 1 }} 页吗？
+            </n-popconfirm>
           </div>
         </div>
 
@@ -400,7 +410,7 @@
 import { ref, nextTick, watch, onMounted, onUnmounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useGeneratorStore } from "../stores/generator";
-import { useMessage, NTooltip } from "naive-ui";
+import { useMessage, NTooltip, NPopconfirm } from "naive-ui";
 import CreationStepper from "../components/home/CreationStepper.vue";
 import {
   updateHistory,
@@ -523,10 +533,8 @@ const deletePage = (index: number) => {
     message.warning("至少需要保留 1 页大纲内容");
     return;
   }
-  if (confirm("确定要删除这一页吗？删除后不可恢复。")) {
-    store.deletePage(index);
-    message.success("页面已删除");
-  }
+  store.deletePage(index);
+  message.success("页面已删除");
 };
 
 const addPage = (type: "cover" | "content" | "summary") => {
@@ -540,13 +548,28 @@ const goBack = () => {
   router.back();
 };
 
+const isStartingGeneration = ref(false);
+
 const startGeneration = async () => {
-  if (saveTimer !== null) {
-    clearTimeout(saveTimer);
-    saveTimer = null;
-    await autoSaveOutline();
+  if (isStartingGeneration.value) return;
+  if (!store.outline.pages || store.outline.pages.length === 0) {
+    message.warning("请至少保留 1 页大纲内容后再开始生成");
+    return;
   }
-  router.push("/redbook/generate");
+
+  isStartingGeneration.value = true;
+  try {
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    await autoSaveOutline();
+    router.push("/redbook/generate");
+  } catch (err: any) {
+    message.error("大纲保存失败，请重试: " + (err?.message || String(err)));
+  } finally {
+    isStartingGeneration.value = false;
+  }
 };
 
 const syncPageEditModeMap = () => {

@@ -110,6 +110,39 @@ defineEmits<{
   flex-direction: column;
 }
 
+.mode-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.mode-card.redbook::before {
+  background: radial-gradient(
+    circle at 80% 20%,
+    rgba(255, 36, 66, 0.08) 0%,
+    transparent 60%
+  );
+}
+
+.mode-card.concept::before {
+  background: radial-gradient(
+    circle at 80% 20%,
+    rgba(59, 130, 246, 0.08) 0%,
+    transparent 60%
+  );
+}
+
+.mode-card:hover::before {
+  opacity: 1;
+}
+
+.mode-card:active {
+  transform: translateY(-2px) scale(0.99);
+}
+
 .mode-card:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;

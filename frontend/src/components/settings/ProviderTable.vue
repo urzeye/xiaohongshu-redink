@@ -151,14 +151,17 @@
           测试连接
         </n-tooltip>
 
-        <n-tooltip
+        <n-popconfirm
           v-if="canDelete"
-          trigger="hover"
+          positive-text="删除"
+          negative-text="取消"
+          @positive-click="$emit('delete', name)"
         >
           <template #trigger>
             <button
               class="search-action-btn danger"
-              @click.stop="$emit('delete', name)"
+              title="删除此服务商"
+              @click.stop
             >
               <svg
                 viewBox="0 0 24 24"
@@ -173,8 +176,8 @@
               </svg>
             </button>
           </template>
-          删除
-        </n-tooltip>
+          确定要删除搜索服务「{{ getProviderDisplayName(name, provider) }}」吗？
+        </n-popconfirm>
       </div>
     </div>
   </div>
@@ -268,14 +271,17 @@
           编辑
         </n-tooltip>
 
-        <n-tooltip
+        <n-popconfirm
           v-if="canDelete"
-          trigger="hover"
+          positive-text="删除"
+          negative-text="取消"
+          @positive-click="$emit('delete', name)"
         >
           <template #trigger>
             <button
               class="btn-icon danger"
-              @click="$emit('delete', name)"
+              title="删除此服务商"
+              @click.stop
             >
               <svg
                 width="16"
@@ -292,8 +298,8 @@
               </svg>
             </button>
           </template>
-          删除
-        </n-tooltip>
+          确定要删除服务商「{{ getProviderDisplayName(name, provider) }}」吗？
+        </n-popconfirm>
       </div>
     </div>
     <div v-if="!providers || Object.keys(providers).length === 0" class="empty-providers-placeholder">
@@ -304,7 +310,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { NTooltip } from 'naive-ui'
+import { NTooltip, NPopconfirm } from 'naive-ui'
 
 interface Provider {
   type: string

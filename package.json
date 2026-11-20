@@ -1,6 +1,6 @@
 {
   "name": "redink",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "RedInk · 小红书 AI 爆款图文创作与本地安全发布引擎",
   "private": true,
   "scripts": {

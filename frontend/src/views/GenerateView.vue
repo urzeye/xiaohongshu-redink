@@ -34,11 +34,14 @@
         <p>{{ errorText }}</p>
         <div class="actions">
           <button class="btn btn-primary" @click="launch" :disabled="launching">
-            立即重试
+            {{ launching ? "正在重试..." : "立即重试" }}
           </button>
           <button class="btn btn-secondary" @click="router.push('/redbook/outline')">
             返回大纲编辑
           </button>
+          <router-link to="/settings" class="btn btn-ghost">
+            前往系统设置
+          </router-link>
         </div>
       </div>
     </div>

@@ -369,7 +369,6 @@ function createProviderHandler(
   }
 
   const remove = async (name: string) => {
-    if (!confirm(`确定要删除服务商 "${name}" 吗？`)) return
     delete config.value.providers[name]
     if (config.value.active_provider === name) config.value.active_provider = ''
     await autoSave(true)

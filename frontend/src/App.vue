@@ -139,6 +139,11 @@
                 <polyline points="21 15 16 10 5 21"></polyline>
               </svg>
               <span class="nav-text">小红书图文</span>
+              <span
+                v-if="hasActiveGeneration"
+                class="nav-live-pulse-badge"
+                title="图文正在并发渲染中"
+              ></span>
             </a>
             <RouterLink
               to="/templates"
@@ -613,6 +618,43 @@
 
         <!-- 主内容区 -->
         <main class="layout-main">
+          <!-- 全局并发渲染任务悬浮提示条 -->
+          <transition name="task-pill-slide">
+            <div
+              v-if="hasActiveGeneration && !isAtResultPage"
+              class="global-active-task-bar"
+              @click="goToGeneratingResult"
+              role="status"
+              tabindex="0"
+              @keydown.enter="goToGeneratingResult"
+              @keydown.space.prevent="goToGeneratingResult"
+              aria-label="图文并发渲染中，点击查看实时进度"
+            >
+              <div class="active-task-badge">
+                <span class="active-task-pulse-dot"></span>
+                <span class="active-task-tag">渲染中</span>
+              </div>
+              <span class="active-task-text">
+                图文后台并发生成中 · 已完成 <strong>{{ generatorStore.progress.current }} / {{ generatorStore.progress.total }}</strong> 页
+              </span>
+              <span class="active-task-action">
+                <span>进入面板</span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </transition>
+
           <RouterView v-slot="{ Component, route }">
             <transition name="page-fade" mode="out-in">
               <component :is="Component" :key="route.fullPath" />
@@ -646,7 +688,7 @@
 
 <script setup lang="ts">
 import { RouterView, RouterLink, useRoute, useRouter } from "vue-router";
-import { ref, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import {
   NConfigProvider,
   NMessageProvider,
@@ -657,7 +699,27 @@ import { setupAutoSave, useGeneratorStore } from "./stores/generator";
 import { useTheme } from "./composables/useTheme";
 
 const router = useRouter();
+const route = useRoute();
 const generatorStore = useGeneratorStore();
+
+const hasActiveGeneration = computed(() => {
+  return (
+    (generatorStore.progress?.status === "generating" ||
+      generatorStore.stage === "generating") &&
+    Boolean(generatorStore.imageJobId)
+  );
+});
+
+const isAtResultPage = computed(() => {
+  return (
+    route.path.startsWith("/redbook/result") ||
+    route.path.startsWith("/redbook/generate")
+  );
+});
+
+function goToGeneratingResult() {
+  router.push("/redbook/result");
+}
 
 function navigateRedbook(e: Event) {
   e.preventDefault();
@@ -721,7 +783,6 @@ const themeOverrides: GlobalThemeOverrides = {
   },
 };
 
-const route = useRoute();
 const { isDark, theme, setTheme } = useTheme();
 
 const toggleTheme = () => {
@@ -826,5 +887,135 @@ onMounted(() => {
 .sidebar-footer {
   margin-top: 0; /* 之前是 auto，现在交给 theme-switcher 推下去了 */
   padding-top: 16px;
+}
+
+/* 侧边栏任务呼吸红点 */
+.nav-live-pulse-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  margin-left: auto;
+  box-shadow: 0 0 8px rgba(255, 36, 66, 0.8);
+  animation: liveBadgePulse 1.6s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes liveBadgePulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.75;
+    box-shadow: 0 0 6px rgba(255, 36, 66, 0.6);
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(255, 36, 66, 0.95);
+  }
+}
+
+/* 全局并发渲染任务通知悬浮胶囊 */
+.global-active-task-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px;
+  margin-bottom: 20px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 36, 66, 0.35);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 20px rgba(255, 36, 66, 0.12), var(--shadow-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  animation: taskPillEntrance 0.35s var(--ease-out);
+}
+
+.global-active-task-bar:hover {
+  border-color: var(--primary);
+  background: var(--bg-elevated);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 36, 66, 0.22), var(--shadow-md);
+}
+
+.global-active-task-bar:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.active-task-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--primary-light);
+  border-radius: 99px;
+  border: 1px solid rgba(255, 36, 66, 0.25);
+}
+
+.active-task-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: liveBadgePulse 1.4s infinite ease-in-out;
+}
+
+.active-task-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.active-task-text {
+  font-size: 13px;
+  color: var(--text-main);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.active-task-text strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.active-task-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  transition: transform var(--transition-fast);
+}
+
+.global-active-task-bar:hover .active-task-action svg {
+  transform: translateX(3px);
+}
+
+/* 动效过渡 */
+.task-pill-slide-enter-active,
+.task-pill-slide-leave-active {
+  transition: all 0.28s var(--ease-out);
+}
+
+.task-pill-slide-enter-from,
+.task-pill-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+@keyframes taskPillEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

@@ -14,6 +14,11 @@
       >
         <div class="step-indicator">
           <span v-if="isStepCompleted(step.key)" class="step-check">✓</span>
+          <span
+            v-else-if="step.key === 'result' && isRenderingImages"
+            class="step-spinner"
+            title="图文并发渲染中"
+          ></span>
           <span v-else class="step-num">{{ idx + 1 }}</span>
         </div>
         <div class="step-meta">
@@ -62,6 +67,13 @@ const stepOrder: Record<StepKey, number> = {
   publish: 3,
 };
 
+const isRenderingImages = computed(() => {
+  return (
+    (store.progress?.status === "generating" || store.stage === "generating") &&
+    Boolean(store.imageJobId)
+  );
+});
+
 function isStepCompleted(key: StepKey): boolean {
   return stepOrder[normalizedStep.value] > stepOrder[key];
 }
@@ -71,8 +83,21 @@ function isStepClickable(key: StepKey): boolean {
   if (stepOrder[key] < stepOrder[normalizedStep.value]) return true;
   // 如果大纲已有内容，允许点击到大纲
   if (key === "outline" && store.outline?.pages?.length > 0) return true;
-  // 如果已经有生成的图片，允许点击到结果
-  if (key === "result" && store.images?.length > 0) return true;
+  // 如果已经有生成的图片或正在渲染中，允许点击到结果
+  if (
+    key === "result" &&
+    (store.images?.length > 0 || isRenderingImages.value)
+  ) {
+    return true;
+  }
+  // 如果已满足发布条件且图片全部就绪，允许直达发布
+  if (
+    key === "publish" &&
+    store.images?.length > 0 &&
+    store.images.every((img) => img.status === "done" && img.url)
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -186,6 +211,21 @@ function handleStepClick(key: StepKey) {
   background: rgba(16, 185, 129, 0.15);
   border-color: var(--color-success);
   color: var(--color-success);
+}
+
+.step-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: stepperSpin 0.8s linear infinite;
+}
+
+@keyframes stepperSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .step-check {
