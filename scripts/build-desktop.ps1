@@ -32,7 +32,15 @@ Write-Host "[2/3] 执行 Tauri 编译..." -ForegroundColor Blue
 if ($NoBundle) {
     pnpm tauri build --no-bundle
     Write-Host "[3/3] 编译完成！可执行文件路径: src-tauri\target\release\redink.exe" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "⚠️ 注意: redink.exe 是前端桌面窗口外壳，核心 AI 与发布引擎依赖 backend/ 核心代码！" -ForegroundColor Yellow
+    Write-Host "• 请勿仅将 redink.exe 单文件拷贝到其他目录运行；" -ForegroundColor Yellow
+    Write-Host "• 如需分发免安装绿色便携文件夹，请运行: powershell scripts\package-portable.ps1" -ForegroundColor Cyan
 } else {
     pnpm tauri build
-    Write-Host "[3/3] 打包完成！安装包位于: src-tauri\target\release\bundle\" -ForegroundColor Green
+    Write-Host "[3/3] 打包完成！安装包位于: src-tauri\target\release\bundle\nsis\" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "💡 提示: 分发给最终用户请使用上面的 NSIS 安装程序 (RedInk_*_x64-setup.exe)！" -ForegroundColor Cyan
+    Write-Host "• 安装包运行后会自动将 redink.exe 与 Python 核心引擎 (backend/) 完整释放到应用目录；" -ForegroundColor Cyan
+    Write-Host "• 如需制作免安装的绿色便携压缩包，请运行: powershell scripts\package-portable.ps1" -ForegroundColor Cyan
 }

@@ -206,6 +206,22 @@ impl ProcessManager {
                     return cand;
                 }
             }
+
+            // 4.5. 检查系统标准安装目录（当用户通过安装程序安装后，若单独提取或创建了快捷方式运行）
+            #[cfg(target_os = "windows")]
+            {
+                let installed_candidates = [
+                    home.join("AppData").join("Local").join("Programs").join("RedInk"),
+                    PathBuf::from("C:\\Program Files\\RedInk"),
+                    PathBuf::from("C:\\Program Files (x86)\\RedInk"),
+                ];
+                for cand in installed_candidates {
+                    if cand.join("backend").join("app.py").exists() {
+                        info!("[ProcessManager] Found project root via default install path: {:?}", cand);
+                        return cand;
+                    }
+                }
+            }
         }
 
         // 5. 降级安全处理：避免降级到系统只读根目录 / 或 target 目录
@@ -556,7 +572,14 @@ impl ProcessManager {
         let app_py = self.project_root.join("backend").join("app.py");
 
         if !app_py.exists() {
-            return Err(format!("找不到启动脚本 backend/app.py: {:?}", app_py));
+            return Err(format!(
+                "未在当前应用目录找到后端核心脚本 backend/app.py: {:?}。\n\n\
+                【故障原因与解决办法】：\n\
+                RedInk 桌面端是混合架构：redink.exe 是前端桌面容器，后台核心 AI 与发布引擎由 Python (backend/ 目录) 驱动。\n\
+                • 若您直接拷贝了 redink.exe：请勿单独提取单文件运行！请使用构建生成的正式安装包进行安装（位于 src-tauri/target/release/bundle/nsis/）；\n\
+                • 若需要绿色免安装运行：请将包含 redink.exe、backend/、tools/ 的整个目录完整移动，或运行 scripts/package-portable.ps1 生成绿色便携压缩包。",
+                app_py
+            ));
         }
 
         info!("Spawning backend with {:?} at {:?}", python, app_py);
