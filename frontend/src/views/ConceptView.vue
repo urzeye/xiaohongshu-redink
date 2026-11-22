@@ -1175,7 +1175,7 @@ onMounted(() => {
   font-size: 11px;
   padding: 3px 8px;
   background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
+  color: var(--color-purple);
   border-radius: var(--radius-sm);
 }
 

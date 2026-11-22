@@ -365,31 +365,6 @@ a:hover {
 }
 
 /* ========== 全局现代卡片系统 (Glass/Soft Shadow) ========== */
-.card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  transition:
-    box-shadow var(--transition-base),
-    transform var(--transition-fast);
-}
-
-.card:hover {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="dark"] .card {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-[data-theme="dark"] .card:hover {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -659,13 +634,13 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.16);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 99px;
   transition: background 0.2s ease;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -679,11 +654,11 @@ a:hover {
 /* 标准 CSS 滚动条规范 */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
-[data-theme="dark"] * {
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+[data-theme="light"] * {
+  scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
 }
 
 /* ========== 选中文本 ========== */
