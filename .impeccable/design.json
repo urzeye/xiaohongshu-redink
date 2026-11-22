@@ -72,7 +72,7 @@
       { "name": "ease-base", "value": "220ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "标准过渡：卡片、侧栏折叠、菜单展开" },
       { "name": "ease-slow", "value": "350ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "重过渡：弹窗浮现与页面级变化" },
       { "name": "ease-spring", "value": "cubic-bezier(0.34, 1.35, 0.64, 1)", "purpose": "弹性强调，用于需要回弹张力的元素" },
-      { "name": "page-fade", "value": "240ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "页面切换：透明度 + 6px 纵向位移，响应 prefers-reduced-motion" }
+      { "name": "page-fade", "value": "入场 200ms / 离场 120ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "页面切换：透明度 + 4px 纵向位移，配合 router scrollBehavior，响应 prefers-reduced-motion" }
     ],
     "breakpoints": [
       { "name": "sm", "value": "768px" },

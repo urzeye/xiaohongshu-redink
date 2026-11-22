@@ -51,6 +51,13 @@ body {
   position: relative;
 }
 
+/* Naive UI 配置层是布局中间层：作为 flex 子项必须占满容器宽度且允许收缩，
+   否则按其内容 min-content 撑开，会把主内容区顶出视口右缘 */
+#app > .n-config-provider {
+  width: 100%;
+  min-width: 0;
+}
+
 /* ========== 侧边栏 ========== */
 .layout-sidebar {
   width: var(--sidebar-width);

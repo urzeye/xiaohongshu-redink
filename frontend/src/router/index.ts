@@ -1,24 +1,24 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// 新首页
-import LandingView from '../views/LandingView.vue'
+// 路由级代码分割：首屏只加载落地页，其余视图按需加载，加快首次进入与切换
+const LandingView = () => import('../views/LandingView.vue')
 
 // 小红书模式页面
-import HomeView from '../views/HomeView.vue'
-import OutlineView from '../views/OutlineView.vue'
-import GenerateView from '../views/GenerateView.vue'
-import ResultView from '../views/ResultView.vue'
-import PublishView from '../views/PublishView.vue'
+const HomeView = () => import('../views/HomeView.vue')
+const OutlineView = () => import('../views/OutlineView.vue')
+const GenerateView = () => import('../views/GenerateView.vue')
+const ResultView = () => import('../views/ResultView.vue')
+const PublishView = () => import('../views/PublishView.vue')
 
 // 概念图模式页面
-import ConceptView from '../views/ConceptView.vue'
-import ConceptHistoryView from '../views/ConceptHistoryView.vue'
+const ConceptView = () => import('../views/ConceptView.vue')
+const ConceptHistoryView = () => import('../views/ConceptHistoryView.vue')
 
 // 通用页面
-import HistoryView from '../views/HistoryView.vue'
-import SettingsView from '../views/SettingsView.vue'
-import KnowledgeView from '../views/KnowledgeView.vue'
-import TemplateMarketView from '../views/TemplateMarketView.vue'
+const HistoryView = () => import('../views/HistoryView.vue')
+const SettingsView = () => import('../views/SettingsView.vue')
+const KnowledgeView = () => import('../views/KnowledgeView.vue')
+const TemplateMarketView = () => import('../views/TemplateMarketView.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

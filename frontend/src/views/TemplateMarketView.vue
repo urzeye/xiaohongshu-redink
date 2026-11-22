@@ -399,6 +399,9 @@ onMounted(async () => {
   overflow-x: auto;
   padding: 3px 2px 8px;
   margin-bottom: 14px;
+  /* 右侧渐隐提示还有更多分类可滚动 */
+  mask-image: linear-gradient(to right, #000 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 90%, transparent 100%);
 }
 
 .category-pill {
