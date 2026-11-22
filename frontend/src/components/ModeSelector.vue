@@ -108,6 +108,33 @@ defineEmits<{
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: modeCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* 编排入场：小红书模式先行，概念图随后错一拍 */
+.mode-card.redbook {
+  animation-delay: 0.12s;
+}
+
+.mode-card.concept {
+  animation-delay: 0.22s;
+}
+
+@keyframes modeCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-card {
+    animation: none;
+  }
 }
 
 .mode-card::before {

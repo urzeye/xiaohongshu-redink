@@ -95,7 +95,7 @@
 
     <!-- 版权信息 -->
     <div class="page-footer">
-      <div class="footer-tip">RedInk 红墨 - 让创作更简单</div>
+      <div class="footer-tip">RedInk (红墨) · 让传播不再需要门槛，让创作从未如此简单</div>
       <div class="footer-copyright">© 2026 RedInk (xiaohongshu-redink)</div>
       <div class="footer-license">
         Licensed under

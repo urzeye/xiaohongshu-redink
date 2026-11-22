@@ -378,7 +378,10 @@
       </div>
     </div>
 
-    <div class="revision-float-box">
+    <div
+      v-if="store.outline?.pages && store.outline.pages.length > 0"
+      class="revision-float-box"
+    >
       <input
         v-model="revisionRequest"
         type="text"

@@ -22,6 +22,13 @@ import TemplateMarketView from '../views/TemplateMarketView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  // 前进/后退时恢复滚动位置；主动导航一律回到顶部，避免新页面继承旧页面的滚动偏移
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    }
+    return { top: 0 };
+  },
   routes: [
     // 首页 - 模式选择
     {

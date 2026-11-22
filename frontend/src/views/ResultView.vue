@@ -1362,7 +1362,7 @@ onMounted(async () => {
   }
 
   if (store.outline.pages.length === 0) {
-    router.push("/");
+    router.push("/redbook");
     return;
   }
 

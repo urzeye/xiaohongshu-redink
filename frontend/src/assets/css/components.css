@@ -469,6 +469,10 @@
   max-width: 320px;
 }
 
+.empty-cta {
+  margin-top: 24px;
+}
+
 .empty-state-mini {
   flex: 1;
   display: flex;

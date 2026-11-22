@@ -6,9 +6,8 @@
     <n-config-provider
       :theme="isDark ? darkTheme : null"
       :theme-overrides="themeOverrides"
-      style="display: contents"
     >
-      <n-message-provider style="display: contents">
+      <n-message-provider>
         <!-- 移动端顶部顶栏 -->
         <header class="mobile-header">
           <RouterLink
@@ -666,7 +665,7 @@
               class="global-footer"
             >
               <div class="footer-content">
-                <div class="footer-tip">RedInk (红墨) · 小红书 AI 驱动的爆款图文创作引擎</div>
+                <div class="footer-tip">RedInk (红墨) · 让传播不再需要门槛，让创作从未如此简单</div>
                 <div class="footer-text">© 2026 RedInk (xiaohongshu-redink)</div>
                 <div class="footer-license">
                   Licensed under

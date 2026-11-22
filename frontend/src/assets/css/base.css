@@ -32,6 +32,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   max-width: 100vw;
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
 /* 统一焦点可见环 (WCAG 2.2 AA) */
@@ -345,6 +346,11 @@ h4,
   line-height: var(--small-line-height);
 }
 
+/* 中文词组防断行 */
+.nowrap {
+  white-space: nowrap;
+}
+
 /* 标签文本 */
 .text-caption {
   font-size: var(--caption-size);
@@ -489,21 +495,20 @@ a:hover {
 
 /* ========== 页面切换过渡 ========== */
 .page-fade-enter-active {
-  transition: opacity 0.24s var(--ease-out), transform 0.24s var(--ease-out);
+  transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
 }
 
 .page-fade-leave-active {
-  transition: opacity 0.16s ease-in, transform 0.16s ease-in;
+  transition: opacity 0.12s ease-in;
 }
 
 .page-fade-enter-from {
   opacity: 0;
-  transform: translateY(6px) scale(0.998);
+  transform: translateY(4px);
 }
 
 .page-fade-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -598,6 +603,11 @@ a:hover {
     transform: translateX(-100%);
     box-shadow: none;
     z-index: 99;
+  }
+
+  /* 移动端侧栏为抽屉式，折叠按钮无意义且会漏出视口左缘 */
+  .collapse-btn {
+    display: none;
   }
 
   .layout-sidebar.mobile-open {

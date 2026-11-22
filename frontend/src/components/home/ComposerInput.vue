@@ -1106,6 +1106,25 @@ defineExpose({
     align-items: stretch;
   }
 
+  .setting-item {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .setting-label {
+    flex-shrink: 0;
+  }
+
+  /* 开关联排项保持「标签左、开关右」的表单行模式 */
+  .search-toggle {
+    justify-content: flex-start;
+  }
+
+  .search-toggle .setting-label {
+    order: -1;
+    margin-right: auto;
+  }
+
   .search-provider-setting {
     margin-left: 0;
     width: 100%;

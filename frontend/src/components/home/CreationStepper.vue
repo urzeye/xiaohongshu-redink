@@ -75,7 +75,14 @@ const isRenderingImages = computed(() => {
 });
 
 function isStepCompleted(key: StepKey): boolean {
-  return stepOrder[normalizedStep.value] > stepOrder[key];
+  if (stepOrder[normalizedStep.value] <= stepOrder[key]) return false;
+  // 完成态需有对应数据支撑，避免空流程下展示虚假进度
+  if (key === "outline") return (store.outline?.pages?.length ?? 0) > 0;
+  if (key === "result") return (store.images?.length ?? 0) > 0;
+  if (key === "topic") {
+    return Boolean(store.topic?.trim()) || (store.outline?.pages?.length ?? 0) > 0;
+  }
+  return true;
 }
 
 function isStepClickable(key: StepKey): boolean {

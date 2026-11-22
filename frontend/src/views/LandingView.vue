@@ -6,7 +6,7 @@
       <div class="hero-content">
         <h1 class="page-title">选择创作模式</h1>
         <p class="page-subtitle">
-          RedInk 双核创作引擎 · 从 3:4 社媒爆款图文卡片到经典理论概念蓝图，让 AI 将你的创意一键高质量落地
+          RedInk 双核创作引擎 · 从 3:4 社媒爆款图文卡片到经典理论概念蓝图，让 AI 将你的创意<span class="nowrap">一键</span>高质量落地
         </p>
       </div>
 
