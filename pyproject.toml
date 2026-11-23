@@ -1,6 +1,6 @@
 [project]
 name = "redink"
-version = "0.5.0"
+version = "0.5.1"
 description = "RedInk (xiaohongshu-redink) - 开源小红书 AI 爆款图文生成与批量发布工具"
 requires-python = ">=3.9"
 dependencies = [

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List
 
 DEFAULT_APP_NAME = "RedInk"
-DEFAULT_APP_VERSION = "0.5.0"
+DEFAULT_APP_VERSION = "0.5.1"
 
 
 def _to_bool(value: str | None, default: bool = False) -> bool:
